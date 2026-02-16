@@ -1,0 +1,52 @@
+<form id="portfolio-form">
+  <h2>Générez votre portfolio</h2>
+  <input type="text" name="name" placeholder="Votre nom" required>
+  <textarea name="bio" placeholder="Votre bio" required></textarea>
+  
+  <div id="projects">
+    <div class="project">
+      <input type="text" name="project_title" placeholder="Titre du projet" required>
+      <textarea name="project_description" placeholder="Description" required></textarea>
+      <input type="file" name="project_image">
+    </div>
+  </div>
+  
+  <button type="button" onclick="addProject()">Ajouter un projet</button>
+  <button type="submit">Générer mon portfolio</button>
+</form>
+
+<script>
+  function addProject() {
+    const projectDiv = document.createElement('div');
+    projectDiv.className = 'project';
+    projectDiv.innerHTML = `
+      <input type="text" name="project_title" placeholder="Titre du projet" required>
+      <textarea name="project_description" placeholder="Description" required></textarea>
+      <input type="file" name="project_image">
+    `;
+    document.getElementById('projects').appendChild(projectDiv);
+  }
+  
+  document.getElementById('portfolio-form').onsubmit = async (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const data = {
+      name: formData.get('name'),
+      bio: formData.get('bio'),
+      projects: Array.from(document.querySelectorAll('.project')).map(p => ({
+        title: p.querySelector('[name="project_title"]').value,
+        description: p.querySelector('[name="project_description"]').value,
+        image: p.querySelector('[name="project_image"]').files[0]?.name || 'default.jpg'
+      }))
+    };
+    
+    // Envoie les données au backend (ex : API ou script Python)
+    const response = await fetch('/generate-portfolio', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(data)
+    });
+    const result = await response.json();
+    alert(`Portfolio généré : ${result.url}`);
+  };
+</script>
