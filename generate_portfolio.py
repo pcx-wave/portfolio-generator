@@ -418,6 +418,105 @@ def generate_portfolio(
     return response
 
 
+def generate_astro_portfolio(
+    user_data: Dict[str, Any],
+    output_dir: str = "dist-astro",
+    site_template: str = DEFAULT_TEMPLATE_MODE,
+    design_theme: str = DEFAULT_DESIGN_THEME,
+) -> Dict[str, str]:
+    """Generate an Astro-based portfolio project."""
+    if site_template not in TEMPLATE_MODES:
+        raise ValueError(f"Unsupported site_template '{site_template}'. Expected one of: {sorted(TEMPLATE_MODES)}")
+    if design_theme not in DESIGN_THEME_FILES:
+        raise ValueError(f"Unsupported design_theme '{design_theme}'. Expected one of: {sorted(DESIGN_THEME_FILES)}")
+    
+    base_dir = Path(__file__).resolve().parent
+    astro_template_dir = base_dir / "templates" / "astro"
+    css_path = base_dir / "templates" / "styles" / DESIGN_THEME_FILES[design_theme]
+    output_path = Path(output_dir).resolve()
+    
+    # Validate template directory exists
+    if not astro_template_dir.exists():
+        raise FileNotFoundError(f"Astro template directory not found: {astro_template_dir}")
+    
+    # Validate required template files exist
+    required_files = [
+        astro_template_dir / "src" / "layouts" / "Layout.astro",
+        astro_template_dir / "src" / "pages" / "index.astro",
+        astro_template_dir / "astro.config.mjs",
+        astro_template_dir / "package.json"
+    ]
+    missing_files = [f for f in required_files if not f.exists()]
+    if missing_files:
+        raise FileNotFoundError(f"Required Astro template files missing: {', '.join(str(f) for f in missing_files)}")
+    
+    # Build portfolio record
+    record = build_portfolio_record(user_data, site_template=site_template)
+    
+    # Create Astro project structure
+    output_path.mkdir(parents=True, exist_ok=True)
+    (output_path / "src" / "layouts").mkdir(parents=True, exist_ok=True)
+    (output_path / "src" / "pages").mkdir(parents=True, exist_ok=True)
+    (output_path / "src" / "content" / "portfolio").mkdir(parents=True, exist_ok=True)
+    (output_path / "public" / "styles").mkdir(parents=True, exist_ok=True)
+    
+    # Copy Astro template files
+    # Copy Layout.astro
+    layout_src = astro_template_dir / "src" / "layouts" / "Layout.astro"
+    shutil.copy2(layout_src, output_path / "src" / "layouts" / "Layout.astro")
+    
+    # Copy index.astro
+    index_src = astro_template_dir / "src" / "pages" / "index.astro"
+    shutil.copy2(index_src, output_path / "src" / "pages" / "index.astro")
+    
+    # Copy config files
+    for config_file in ["astro.config.mjs", "package.json", "README.md"]:
+        config_src = astro_template_dir / config_file
+        if config_src.exists():
+            shutil.copy2(config_src, output_path / config_file)
+    
+    # Copy CSS to public folder
+    shutil.copy2(css_path, output_path / "public" / "styles" / "main.css")
+    
+    # Write portfolio data as JSON for Astro
+    portfolio_data = {
+        "name": record["name"],
+        "bio": record["bio"],
+        "headline": record["headline"],
+        "photo_url": record["photo_url"],
+        "contact_line": record["contact_line"],
+        "address_line": record["address_line"],
+        "profiles": record["profiles"],
+        "skills": record["skills"],
+        "education": record["education"],
+        "projects": record["projects"],
+        "section_title": SECTION_TITLE_BY_TEMPLATE[site_template]
+    }
+    
+    (output_path / "src" / "content" / "portfolio" / "data.json").write_text(
+        json.dumps(portfolio_data, ensure_ascii=False, indent=2),
+        encoding="utf-8"
+    )
+    
+    # Create .gitignore
+    gitignore_content = """node_modules/
+dist/
+.astro/
+"""
+    (output_path / ".gitignore").write_text(gitignore_content, encoding="utf-8")
+    
+    return {
+        "path": str(output_path),
+        "type": "astro",
+        "portfolio_id": record["portfolio_id"],
+        "site_template": site_template,
+        "design_theme": design_theme,
+        "status": "generated",
+        "dev_command": "npm install && npm run dev",
+        "build_command": "npm run build"
+    }
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Generate or validate a static portfolio site from a JSON payload.")
     parser.add_argument("--input", help="Path to a JSON file containing portfolio or CV input data")
@@ -435,6 +534,7 @@ def main() -> None:
         help="Design theme to generate: classic, modern, contrast, or artistic",
     )
     parser.add_argument("--validate", action="store_true", help="Mark an existing generated draft as validated")
+    parser.add_argument("--astro", action="store_true", help="Generate an Astro-based portfolio instead of static HTML")
     args = parser.parse_args()
 
     if args.validate:
@@ -443,12 +543,25 @@ def main() -> None:
         if not args.input:
             raise ValueError("--input is required unless --validate is used")
         payload = json.loads(Path(args.input).read_text(encoding="utf-8"))
-        result = generate_portfolio(
-            payload,
-            output_dir=args.output_dir,
-            site_template=args.site_template,
-            design_theme=args.design_theme,
-        )
+        
+        if args.astro:
+            # Generate Astro-based portfolio
+            # Use different default output dir for Astro to avoid conflicts
+            output_dir = args.output_dir if args.output_dir != "dist" else "dist-astro"
+            result = generate_astro_portfolio(
+                payload,
+                output_dir=output_dir,
+                site_template=args.site_template,
+                design_theme=args.design_theme,
+            )
+        else:
+            # Generate static HTML portfolio
+            result = generate_portfolio(
+                payload,
+                output_dir=args.output_dir,
+                site_template=args.site_template,
+                design_theme=args.design_theme,
+            )
     print(json.dumps(result))
 
 
