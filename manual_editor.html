@@ -723,6 +723,249 @@
         // Initialize with one project
         window.addEventListener('load', function() {
             addProject();
+            
+            // Check for URL parameters or postMessage data for pre-filling
+            loadFromURLParams();
+            setupPostMessageListener();
+        });
+
+        // Load data from URL parameters
+        function loadFromURLParams() {
+            const urlParams = new URLSearchParams(window.location.search);
+            
+            // Check if data is passed as URL parameter
+            const dataParam = urlParams.get('data');
+            if (dataParam) {
+                try {
+                    const data = JSON.parse(decodeURIComponent(dataParam));
+                    prefillForm(data);
+                } catch (e) {
+                    console.error('Error parsing URL data:', e);
+                }
+            }
+            
+            // Check for individual fields
+            const name = urlParams.get('name');
+            const bio = urlParams.get('bio');
+            const email = urlParams.get('email');
+            
+            if (name) document.getElementById('name').value = name;
+            if (bio) document.getElementById('bio').value = bio;
+            if (email) document.getElementById('email').value = email;
+        }
+
+        // Setup PostMessage listener for iframe communication
+        function setupPostMessageListener() {
+            window.addEventListener('message', function(event) {
+                // In production, validate event.origin for security
+                // if (event.origin !== "https://jobsmatch.com") return;
+                
+                if (event.data.type === 'prefill-data') {
+                    prefillForm(event.data.data);
+                } else if (event.data.type === 'get-data') {
+                    // Send current form data to parent
+                    const formData = getCurrentFormData();
+                    event.source.postMessage({
+                        type: 'form-data',
+                        data: formData
+                    }, '*');
+                }
+            });
+        }
+
+        // Prefill form with data
+        function prefillForm(data) {
+            if (!data) return;
+            
+            // Basic fields
+            if (data.basics) {
+                if (data.basics.name) document.getElementById('name').value = data.basics.name;
+                if (data.basics.summary) document.getElementById('bio').value = data.basics.summary;
+                if (data.basics.label) document.getElementById('headline').value = data.basics.label;
+                if (data.basics.image) document.getElementById('photo_url').value = data.basics.image;
+                if (data.basics.email) document.getElementById('email').value = data.basics.email;
+                if (data.basics.phone) document.getElementById('phone').value = data.basics.phone;
+                if (data.basics.location && data.basics.location.address) {
+                    document.getElementById('address').value = data.basics.location.address;
+                }
+                
+                // Profiles
+                if (data.basics.profiles && Array.isArray(data.basics.profiles)) {
+                    data.basics.profiles.forEach((profile, index) => {
+                        addProfile();
+                        const profileNum = profileCounter;
+                        if (profile.network) {
+                            document.querySelector(`[name="profile_network_${profileNum}"]`).value = profile.network;
+                        }
+                        if (profile.url) {
+                            document.querySelector(`[name="profile_url_${profileNum}"]`).value = profile.url;
+                        }
+                    });
+                }
+            }
+            
+            // Skills
+            if (data.skills && Array.isArray(data.skills)) {
+                data.skills.forEach(skill => {
+                    addSkill();
+                    const skillNum = skillCounter;
+                    if (skill.name) {
+                        document.querySelector(`[name="skill_name_${skillNum}"]`).value = skill.name;
+                    }
+                });
+            }
+            
+            // Education
+            if (data.education && Array.isArray(data.education)) {
+                data.education.forEach(edu => {
+                    addEducation();
+                    const eduNum = educationCounter;
+                    if (edu.institution) {
+                        document.querySelector(`[name="education_institution_${eduNum}"]`).value = edu.institution;
+                    }
+                    if (edu.studyType) {
+                        document.querySelector(`[name="education_studyType_${eduNum}"]`).value = edu.studyType;
+                    }
+                    if (edu.area) {
+                        document.querySelector(`[name="education_area_${eduNum}"]`).value = edu.area;
+                    }
+                    if (edu.startDate) {
+                        document.querySelector(`[name="education_startDate_${eduNum}"]`).value = edu.startDate;
+                    }
+                    if (edu.endDate) {
+                        document.querySelector(`[name="education_endDate_${eduNum}"]`).value = edu.endDate;
+                    }
+                    if (edu.score) {
+                        document.querySelector(`[name="education_score_${eduNum}"]`).value = edu.score;
+                    }
+                });
+            }
+            
+            // Projects - remove the default empty project first
+            document.getElementById('projectsList').innerHTML = '';
+            projectCounter = 0;
+            
+            if (data.projects && Array.isArray(data.projects)) {
+                data.projects.forEach(project => {
+                    addProject();
+                    const projectNum = projectCounter;
+                    if (project.name || project.title) {
+                        document.querySelector(`[name="project_title_${projectNum}"]`).value = project.name || project.title;
+                    }
+                    if (project.description) {
+                        document.querySelector(`[name="project_description_${projectNum}"]`).value = project.description;
+                    }
+                    if (project.image) {
+                        document.querySelector(`[name="project_image_${projectNum}"]`).value = project.image;
+                    }
+                });
+            } else {
+                // Add one empty project if none provided
+                addProject();
+            }
+            
+            showNotification('✓ Données chargées avec succès !', 'success');
+        }
+
+        // Get current form data (for postMessage communication)
+        function getCurrentFormData() {
+            const formData = new FormData(document.getElementById('portfolioForm'));
+            
+            const basics = {
+                name: formData.get('name'),
+                summary: formData.get('bio')
+            };
+            
+            const headline = formData.get('headline');
+            const photoUrl = formData.get('photo_url');
+            const email = formData.get('email');
+            const phone = formData.get('phone');
+            const address = formData.get('address');
+            
+            if (headline && headline.trim()) basics.label = headline;
+            if (photoUrl && photoUrl.trim()) basics.image = photoUrl;
+            if (email && email.trim()) basics.email = email;
+            if (phone && phone.trim()) basics.phone = phone;
+            if (address && address.trim()) {
+                basics.location = { address: address };
+            }
+            
+            basics.profiles = [];
+            for (let i = 1; i <= profileCounter; i++) {
+                const network = formData.get(`profile_network_${i}`);
+                const url = formData.get(`profile_url_${i}`);
+                if ((network && network.trim()) || (url && url.trim())) {
+                    const profile = {};
+                    if (network && network.trim()) profile.network = network.trim();
+                    if (url && url.trim()) profile.url = url.trim();
+                    basics.profiles.push(profile);
+                }
+            }
+
+            const skills = [];
+            for (let i = 1; i <= skillCounter; i++) {
+                const name = formData.get(`skill_name_${i}`);
+                if (name && name.trim()) {
+                    skills.push({ name: name.trim() });
+                }
+            }
+
+            const education = [];
+            for (let i = 1; i <= educationCounter; i++) {
+                const institution = formData.get(`education_institution_${i}`);
+                const studyType = formData.get(`education_studyType_${i}`);
+                const area = formData.get(`education_area_${i}`);
+                const startDate = formData.get(`education_startDate_${i}`);
+                const endDate = formData.get(`education_endDate_${i}`);
+                const score = formData.get(`education_score_${i}`);
+                
+                if ((institution && institution.trim()) || (studyType && studyType.trim()) || (area && area.trim())) {
+                    const edu = {};
+                    if (institution && institution.trim()) edu.institution = institution.trim();
+                    if (studyType && studyType.trim()) edu.studyType = studyType.trim();
+                    if (area && area.trim()) edu.area = area.trim();
+                    if (startDate && startDate.trim()) edu.startDate = startDate.trim();
+                    if (endDate && endDate.trim()) edu.endDate = endDate.trim();
+                    if (score && score.trim()) edu.score = score.trim();
+                    education.push(edu);
+                }
+            }
+
+            const projects = [];
+            for (let i = 1; i <= projectCounter; i++) {
+                const title = formData.get(`project_title_${i}`);
+                const description = formData.get(`project_description_${i}`);
+                const image = formData.get(`project_image_${i}`);
+                
+                if ((title && title.trim()) || (description && description.trim())) {
+                    const project = {};
+                    if (title && title.trim()) project.name = title.trim();
+                    if (description && description.trim()) project.description = description.trim();
+                    if (image && image.trim()) project.image = image.trim();
+                    projects.push(project);
+                }
+            }
+
+            const portfolioData = { basics };
+            if (skills.length > 0) portfolioData.skills = skills;
+            if (education.length > 0) portfolioData.education = education;
+            if (projects.length > 0) portfolioData.projects = projects;
+            
+            return portfolioData;
+        }
+
+        // Notify parent window when form is submitted (for iframe integration)
+        document.getElementById('portfolioForm').addEventListener('submit', function(e) {
+            // After generating JSON, notify parent if in iframe
+            if (window.parent !== window) {
+                setTimeout(function() {
+                    const jsonData = document.getElementById('jsonOutput').textContent;
+                    window.parent.postMessage({
+                        type: 'portfolio-generated',
+                        data: JSON.parse(jsonData)
+                    }, '*');
+                }, 500);
+            }
         });
     </script>
 </body>

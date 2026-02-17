@@ -1,0 +1,13 @@
+{
+  "portfolios": [
+    {
+      "portfolio_id": "d628762f-56da-42b1-854d-312decaea317",
+      "user_id": "f8ead9c4-6090-43dc-a70e-689529403ca8",
+      "name": "Minimal User",
+      "bio": "Minimal bio",
+      "created_at": "2026-02-17T15:38:51.659006+00:00",
+      "updated_at": "2026-02-17T15:38:51.659006+00:00"
+    }
+  ],
+  "projects": []
+}

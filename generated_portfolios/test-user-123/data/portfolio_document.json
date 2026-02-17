@@ -1,0 +1,24 @@
+{
+  "portfolio_id": "10c0ad09-df4c-4f64-8584-0fc4f714bc66",
+  "user_id": "test-user-123",
+  "name": "Test User",
+  "bio": "Test bio",
+  "headline": "Profil professionnel",
+  "photo_url": "https://via.placeholder.com/240x240/2c3e50/FFFFFF?text=Profile",
+  "contact_line": "test@example.com",
+  "address_line": "Adresse non renseignée",
+  "profiles": [],
+  "skills": [],
+  "education": [],
+  "projects": [
+    {
+      "project_id": "2ecaed0d-9182-4da1-9e7e-2e2d32cce206",
+      "title": "Test Project",
+      "description": "Test description",
+      "image": "https://via.placeholder.com/400x250/0077b6/FFFFFF?text=Project"
+    }
+  ],
+  "created_at": "2026-02-17T15:38:51.655282+00:00",
+  "updated_at": "2026-02-17T15:38:51.655282+00:00",
+  "site_template": "hybrid"
+}
