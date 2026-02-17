@@ -4,8 +4,7 @@ Ce dépôt contient un script Python pour générer des portfolios statiques ave
 
 ## Prérequis
 - Python 3.8+
-- Un token GitHub (pour créer des dépôts)
-- Un token Netlify (pour déployer)
+- MongoDB (optionnel, si vous voulez persister les portfolios)
 
 ## Installation
 ```bash
@@ -15,7 +14,7 @@ pip install requests pyyaml
 ## Utilisation (module appelable par un autre service)
 Le module expose `generate_portfolio(user_data, output_dir="dist")` pour être appelé directement par votre service de matching.
 
-### Comment le générateur fonctionne (input -> output)
+### Comment le générateur fonctionne (input -> output, architecture NoSQL)
 
 #### 1) Input attendu
 Le générateur attend un objet JSON (ou dict Python) avec cette structure :
@@ -24,6 +23,7 @@ Le générateur attend un objet JSON (ou dict Python) avec cette structure :
 {
   "name": "Nom Utilisateur",
   "bio": "Bio de l'utilisateur",
+  "user_id": "user-123",
   "projects": [
     {
       "title": "Projet 1",
@@ -36,14 +36,18 @@ Le générateur attend un objet JSON (ou dict Python) avec cette structure :
 
 - `name` : requis
 - `bio` : requis
+- `user_id` : optionnel (généré automatiquement si absent ou vide)
 - `projects` : liste (peut être vide)
 - `projects[].image` : optionnel (une image par défaut est utilisée si vide)
 
 #### 2) Ce qui se passe pendant la génération
+- Un document canonique NoSQL est construit (`portfolio_id`, `user_id`, `created_at`, `updated_at`, `projects[].project_id`).
 - Le template `templates/index.html` est rempli avec vos données.
 - Le CSS `templates/styles/main.css` est copié.
 - Les fichiers Decap CMS sont créés (`admin/index.html`, `admin/config.yml`).
 - Les données éditables sont écrites dans `data/portfolio.json`.
+- Le document NoSQL est écrit dans `data/portfolio_document.json`.
+- Une projection SQL-friendly (tables `portfolios` + `projects`) est écrite dans `data/portfolio_sql_projection.json`.
 - La config Netlify `netlify.toml` est créée.
 
 #### 3) Output généré
@@ -56,6 +60,8 @@ dist/user-123/
   admin/index.html
   admin/config.yml
   data/portfolio.json
+  data/portfolio_document.json
+  data/portfolio_sql_projection.json
   netlify.toml
 ```
 
@@ -64,7 +70,8 @@ La fonction retourne :
 ```json
 {
   "path": "/chemin/absolu/vers/dist/user-123",
-  "admin_url": "/admin/"
+  "admin_url": "/admin/",
+  "portfolio_id": "uuid"
 }
 ```
 
@@ -74,12 +81,22 @@ from generate_portfolio import generate_portfolio
 user_data = {
     "name": "Nom Utilisateur",
     "bio": "Bio de l'utilisateur",
+    "user_id": "user-123",
     "projects": [
         {"title": "Projet 1", "description": "Description", "image": "image.jpg"}
     ]
 }
 result = generate_portfolio(user_data, output_dir="dist/user-123")
 print(result)
+```
+
+Avec MongoDB (optionnel) :
+```python
+from pymongo import MongoClient
+from generate_portfolio import generate_portfolio
+
+collection = MongoClient()["portfolio_db"]["portfolios"]
+result = generate_portfolio(user_data, output_dir="dist/user-123", mongo_collection=collection)
 ```
 
 Ou via CLI (utile pour intégration backend/worker) :

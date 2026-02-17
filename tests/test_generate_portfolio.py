@@ -22,6 +22,8 @@ class GeneratePortfolioTest(unittest.TestCase):
             self.assertTrue((output / "admin" / "index.html").exists())
             self.assertTrue((output / "admin" / "config.yml").exists())
             self.assertTrue((output / "netlify.toml").exists())
+            self.assertTrue((output / "data" / "portfolio_document.json").exists())
+            self.assertTrue((output / "data" / "portfolio_sql_projection.json").exists())
 
             html_content = (output / "index.html").read_text(encoding="utf-8")
             self.assertIn("Alice &lt;Dev&gt;", html_content)
@@ -29,6 +31,14 @@ class GeneratePortfolioTest(unittest.TestCase):
             data_content = json.loads((output / "data" / "portfolio.json").read_text(encoding="utf-8"))
             self.assertEqual("Alice &lt;Dev&gt;", data_content["name"])
             self.assertEqual("Proj 1", data_content["projects"][0]["title"])
+
+            document_content = json.loads((output / "data" / "portfolio_document.json").read_text(encoding="utf-8"))
+            self.assertIn("portfolio_id", document_content)
+            self.assertIn("project_id", document_content["projects"][0])
+
+            sql_projection = json.loads((output / "data" / "portfolio_sql_projection.json").read_text(encoding="utf-8"))
+            self.assertEqual(document_content["portfolio_id"], sql_projection["portfolios"][0]["portfolio_id"])
+            self.assertEqual(document_content["projects"][0]["project_id"], sql_projection["projects"][0]["project_id"])
 
 
 if __name__ == "__main__":

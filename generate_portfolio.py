@@ -1,8 +1,10 @@
 import argparse
+from datetime import datetime, timezone
 import html
 import json
 import re
 import shutil
+from uuid import uuid4
 from pathlib import Path
 from typing import Any, Dict, List
 
@@ -74,16 +76,72 @@ def _normalize_projects(projects: Any) -> List[Dict[str, str]]:
     return normalized
 
 
-def generate_portfolio(user_data: Dict[str, Any], output_dir: str = "dist") -> Dict[str, str]:
+def build_portfolio_record(user_data: Dict[str, Any]) -> Dict[str, Any]:
+    """Build a canonical MongoDB-friendly record with SQL-friendly identifiers."""
+    now = datetime.now(timezone.utc).isoformat()
+    raw_user_id = user_data.get("user_id")
+    user_id = _sanitize_text(raw_user_id) if raw_user_id is not None else ""
+    if not user_id:
+        user_id = str(uuid4())
+    projects: List[Dict[str, Any]] = []
+    for project in _normalize_projects(user_data.get("projects")):
+        projects.append(
+            {
+                "project_id": str(uuid4()),
+                "title": project["title"],
+                "description": project["description"],
+                "image": project["image"],
+            }
+        )
+    return {
+        "portfolio_id": str(uuid4()),
+        "user_id": user_id,
+        "name": _sanitize_text(user_data.get("name")),
+        "bio": _sanitize_text(user_data.get("bio")),
+        "projects": projects,
+        "created_at": now,
+        "updated_at": now,
+    }
+
+
+def _build_sql_projection(record: Dict[str, Any]) -> Dict[str, Any]:
+    return {
+        "portfolios": [
+            {
+                "portfolio_id": record["portfolio_id"],
+                "user_id": record["user_id"],
+                "name": record["name"],
+                "bio": record["bio"],
+                "created_at": record["created_at"],
+                "updated_at": record["updated_at"],
+            }
+        ],
+        "projects": [
+            {
+                "project_id": project["project_id"],
+                "portfolio_id": record["portfolio_id"],
+                "title": project["title"],
+                "description": project["description"],
+                "image": project["image"],
+            }
+            for project in record["projects"]
+        ],
+    }
+
+
+def generate_portfolio(
+    user_data: Dict[str, Any], output_dir: str = "dist", mongo_collection: Any = None
+) -> Dict[str, str]:
     """Generate a static portfolio that can be deployed directly on Netlify."""
     base_dir = Path(__file__).resolve().parent
     template_path = base_dir / "templates" / "index.html"
     css_path = base_dir / "templates" / "styles" / "main.css"
     output_path = Path(output_dir).resolve()
 
-    name = _sanitize_text(user_data.get("name"))
-    bio = _sanitize_text(user_data.get("bio"))
-    projects = _normalize_projects(user_data.get("projects"))
+    record = build_portfolio_record(user_data)
+    name = record["name"]
+    bio = record["bio"]
+    projects = record["projects"]
 
     html_template = template_path.read_text(encoding="utf-8")
     cards = "\n".join(
@@ -119,9 +177,25 @@ def generate_portfolio(user_data: Dict[str, Any], output_dir: str = "dist") -> D
         json.dumps({"name": name, "bio": bio, "projects": projects}, ensure_ascii=False, indent=2),
         encoding="utf-8",
     )
+    (output_path / "data" / "portfolio_document.json").write_text(
+        json.dumps(record, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+    (output_path / "data" / "portfolio_sql_projection.json").write_text(
+        json.dumps(_build_sql_projection(record), ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
     (output_path / "netlify.toml").write_text(NETLIFY_TOML, encoding="utf-8")
 
-    return {"path": str(output_path), "admin_url": "/admin/"}
+    response = {"path": str(output_path), "admin_url": "/admin/", "portfolio_id": record["portfolio_id"]}
+    if mongo_collection is not None:
+        try:
+            mongo_collection.insert_one(record)
+            response["storage"] = "mongodb"
+        except Exception as error:  # pragma: no cover - depends on runtime DB availability
+            response["storage"] = "mongodb_error"
+            response["storage_error"] = str(error)
+    return response
 
 
 def main() -> None:
