@@ -1,13 +1,15 @@
 import argparse
 import html
 import json
+import re
 import shutil
 from pathlib import Path
 from typing import Any, Dict, List
 
 
+DEFAULT_PROJECT_IMAGE = "https://via.placeholder.com/400x250/0077b6/FFFFFF?text=Project"
 PROJECT_CARD_TEMPLATE = """                <div class="project-card">
-                    <img src="{image}" alt="{title}" onerror="this.src='https://via.placeholder.com/400x250/0077b6/FFFFFF?text={title}'">
+                    <img src="{image}" alt="{title}">
                     <h3>{title}</h3>
                     <p>{description}</p>
                 </div>"""
@@ -66,7 +68,7 @@ def _normalize_projects(projects: Any) -> List[Dict[str, str]]:
             {
                 "title": _sanitize_text(project.get("title")),
                 "description": _sanitize_text(project.get("description")),
-                "image": _sanitize_text(project.get("image") or "https://via.placeholder.com/400x250/0077b6/FFFFFF?text=Projet"),
+                "image": _sanitize_text(project.get("image") or DEFAULT_PROJECT_IMAGE),
             }
         )
     return normalized
@@ -93,16 +95,14 @@ def generate_portfolio(user_data: Dict[str, Any], output_dir: str = "dist") -> D
         for project in projects
     )
     rendered_html = html_template.replace("{{name}}", name).replace("{{bio}}", bio)
-    rendered_html = rendered_html.replace(
-        """                {% for project in projects %}
-                <div class="project-card">
-                    <img src="{{project.image}}" alt="{{project.title}}" onerror="this.src='https://via.placeholder.com/400x250/0077b6/FFFFFF?text={{project.title}}'">
-                    <h3>{{project.title}}</h3>
-                    <p>{{project.description}}</p>
-                </div>
-                {% endfor %}""",
-        cards,
+    rendered_html, replaced = re.subn(
+        r"\s*\{%\s*for project in projects\s*%\}.*?\{%\s*endfor\s*%\}",
+        f"\n{cards}",
+        rendered_html,
+        flags=re.DOTALL,
     )
+    if replaced != 1:
+        raise ValueError("Template project loop block not found or duplicated")
 
     output_path.mkdir(parents=True, exist_ok=True)
     (output_path / "styles").mkdir(parents=True, exist_ok=True)
