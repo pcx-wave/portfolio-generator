@@ -29,7 +29,22 @@ from typing import Dict, Any, Optional
 from generate_portfolio import generate_portfolio, mark_site_validated, generate_astro_portfolio
 
 app = Flask(__name__)
-CORS(app)  # Enable CORS for cross-origin requests
+
+# Configure CORS: restrict to specific routes and allow origins via env var
+_allowed_origins_env = os.getenv("API_ALLOWED_ORIGINS")
+if _allowed_origins_env:
+    _allowed_origins = [origin.strip() for origin in _allowed_origins_env.split(",") if origin.strip()]
+else:
+    # Default to all origins for development - should be restricted in production
+    _allowed_origins = "*"
+
+CORS(
+    app,
+    resources={
+        r"/api/*": {"origins": _allowed_origins},
+        r"/editor*": {"origins": _allowed_origins},
+    },
+)
 
 # Configuration
 PORTFOLIOS_DIR = Path(os.getenv("PORTFOLIOS_DIR", "generated_portfolios"))
@@ -88,11 +103,33 @@ def api_generate_portfolio():
         portfolio_data = {k: v for k, v in data.items() 
                          if k not in ["site_template", "design_theme", "callback_url"]}
         
+        # Sanitize user_id and build safe output directory
+        portfolios_root = PORTFOLIOS_DIR.resolve()
+        timestamp_suffix = datetime.now().strftime('%Y%m%d-%H%M%S')
+        
+        if user_id:
+            # Allow only safe characters in user_id to avoid path traversal
+            safe_user_id = "".join(c for c in user_id if c.isalnum() or c in ("-", "_"))
+            if not safe_user_id:
+                dir_name = f"portfolio-{timestamp_suffix}"
+            else:
+                dir_name = safe_user_id
+        else:
+            dir_name = f"portfolio-{timestamp_suffix}"
+        
+        candidate_output_dir = portfolios_root / dir_name
+        output_dir_resolved = candidate_output_dir.resolve()
+        
+        # Ensure the resolved output directory is under the configured portfolios root
+        try:
+            output_dir_resolved.relative_to(portfolios_root)
+        except ValueError:
+            return jsonify({"error": "Invalid user_id or output directory"}), 400
+        
         # Generate portfolio
-        output_dir = PORTFOLIOS_DIR / (user_id if user_id else f"portfolio-{datetime.now().strftime('%Y%m%d-%H%M%S')}")
         result = generate_portfolio(
             portfolio_data,
-            output_dir=str(output_dir),
+            output_dir=str(output_dir_resolved),
             site_template=site_template,
             design_theme=design_theme
         )
@@ -171,11 +208,33 @@ def api_generate_astro_portfolio():
         portfolio_data = {k: v for k, v in data.items() 
                          if k not in ["site_template", "design_theme", "callback_url"]}
         
+        # Sanitize user_id and build safe output directory with Astro suffix
+        portfolios_root = PORTFOLIOS_DIR.resolve()
+        timestamp_suffix = datetime.now().strftime('%Y%m%d-%H%M%S')
+        
+        if user_id:
+            # Allow only safe characters in user_id to avoid path traversal
+            safe_user_id = "".join(c for c in user_id if c.isalnum() or c in ("-", "_"))
+            if not safe_user_id:
+                dir_name = f"astro-{timestamp_suffix}"
+            else:
+                dir_name = f"{safe_user_id}-astro"
+        else:
+            dir_name = f"astro-{timestamp_suffix}"
+        
+        candidate_output_dir = portfolios_root / dir_name
+        output_dir_resolved = candidate_output_dir.resolve()
+        
+        # Ensure the resolved output directory is under the configured portfolios root
+        try:
+            output_dir_resolved.relative_to(portfolios_root)
+        except ValueError:
+            return jsonify({"error": "Invalid user_id or output directory"}), 400
+        
         # Generate Astro portfolio
-        output_dir = PORTFOLIOS_DIR / f"{user_id}-astro" if user_id else PORTFOLIOS_DIR / f"astro-{datetime.now().strftime('%Y%m%d-%H%M%S')}"
         result = generate_astro_portfolio(
             portfolio_data,
-            output_dir=str(output_dir),
+            output_dir=str(output_dir_resolved),
             site_template=site_template,
             design_theme=design_theme
         )
@@ -194,11 +253,10 @@ def api_generate_astro_portfolio():
             "callback_url": callback_url
         }
         
-        # Build response
+        # Build response - don't expose absolute filesystem paths
         response = {
             "success": True,
             "portfolio_id": portfolio_id,
-            "portfolio_path": result["path"],
             "type": "astro",
             "site_template": site_template,
             "design_theme": design_theme,
@@ -232,8 +290,15 @@ def api_get_portfolio(portfolio_id):
         registry_entry = PORTFOLIO_REGISTRY[portfolio_id]
         portfolio_path = Path(registry_entry["path"])
         
-        # Read portfolio data
-        data_file = portfolio_path / "data" / "portfolio.json"
+        # Read portfolio data from correct location based on type
+        portfolio_type = registry_entry.get("type")
+        if portfolio_type == "astro":
+            # Astro portfolios store data in src/content/portfolio/data.json
+            data_file = portfolio_path / "src" / "content" / "portfolio" / "data.json"
+        else:
+            # Default location for non-Astro portfolios
+            data_file = portfolio_path / "data" / "portfolio.json"
+        
         if not data_file.exists():
             return jsonify({"error": "Portfolio data file not found"}), 404
         

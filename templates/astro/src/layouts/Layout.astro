@@ -34,12 +34,21 @@ const { title, portfolio } = Astro.props;
             <h2>Profils</h2>
             <ul class="profiles-list">
                 {portfolio.profiles?.length ? (
-                    portfolio.profiles.map((profile: any) => (
-                        <li>
-                            <strong>{profile.network}</strong> : 
-                            <a href={profile.url}>{profile.url}</a>
-                        </li>
-                    ))
+                    portfolio.profiles.map((profile: any) => {
+                        // Sanitize URL to prevent XSS - only allow http/https
+                        const url = profile.url || '';
+                        const isValidUrl = url.startsWith('http://') || url.startsWith('https://');
+                        return (
+                            <li>
+                                <strong>{profile.network}</strong> : 
+                                {isValidUrl ? (
+                                    <a href={url}>{url}</a>
+                                ) : (
+                                    <span>{url}</span>
+                                )}
+                            </li>
+                        );
+                    })
                 ) : (
                     <li>Non renseigné</li>
                 )}
@@ -105,7 +114,7 @@ const { title, portfolio } = Astro.props;
     
     <footer>
         <div class="container">
-            <p>&copy; 2026 {portfolio.name}. Tous droits réservés.</p>
+            <p>&copy; {new Date().getFullYear()} {portfolio.name}. Tous droits réservés.</p>
         </div>
     </footer>
 </body>

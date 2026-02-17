@@ -12,6 +12,18 @@ http://localhost:5000
 
 For production, replace with your deployed URL.
 
+## ⚠️ Security Warning
+
+**IMPORTANT:** The example configuration is intended **only for local development on a trusted machine**. The API is currently "open" without authentication.
+
+Before exposing this API beyond localhost (e.g., in staging or production), you **must**:
+- Enable strong authentication and authorization (such as API keys or OAuth with per-user/tenant access control)
+- Ensure that all portfolio management endpoints enforce authentication consistently
+- Configure CORS to restrict allowed origins via the `API_ALLOWED_ORIGINS` environment variable
+- Use HTTPS for all production deployments
+
+**Running this API "open" on any network-accessible host is unsafe and must not be done with real user data.**
+
 ## Authentication
 
 Currently, the API is open. For production use, implement authentication (API keys, OAuth, etc.).

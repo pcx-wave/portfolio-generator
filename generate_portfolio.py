@@ -435,6 +435,21 @@ def generate_astro_portfolio(
     css_path = base_dir / "templates" / "styles" / DESIGN_THEME_FILES[design_theme]
     output_path = Path(output_dir).resolve()
     
+    # Validate template directory exists
+    if not astro_template_dir.exists():
+        raise FileNotFoundError(f"Astro template directory not found: {astro_template_dir}")
+    
+    # Validate required template files exist
+    required_files = [
+        astro_template_dir / "src" / "layouts" / "Layout.astro",
+        astro_template_dir / "src" / "pages" / "index.astro",
+        astro_template_dir / "astro.config.mjs",
+        astro_template_dir / "package.json"
+    ]
+    missing_files = [f for f in required_files if not f.exists()]
+    if missing_files:
+        raise FileNotFoundError(f"Required Astro template files missing: {', '.join(str(f) for f in missing_files)}")
+    
     # Build portfolio record
     record = build_portfolio_record(user_data, site_template=site_template)
     
@@ -446,22 +461,19 @@ def generate_astro_portfolio(
     (output_path / "public" / "styles").mkdir(parents=True, exist_ok=True)
     
     # Copy Astro template files
-    if astro_template_dir.exists():
-        # Copy Layout.astro
-        layout_src = astro_template_dir / "src" / "layouts" / "Layout.astro"
-        if layout_src.exists():
-            shutil.copy2(layout_src, output_path / "src" / "layouts" / "Layout.astro")
-        
-        # Copy index.astro
-        index_src = astro_template_dir / "src" / "pages" / "index.astro"
-        if index_src.exists():
-            shutil.copy2(index_src, output_path / "src" / "pages" / "index.astro")
-        
-        # Copy config files
-        for config_file in ["astro.config.mjs", "package.json", "README.md"]:
-            config_src = astro_template_dir / config_file
-            if config_src.exists():
-                shutil.copy2(config_src, output_path / config_file)
+    # Copy Layout.astro
+    layout_src = astro_template_dir / "src" / "layouts" / "Layout.astro"
+    shutil.copy2(layout_src, output_path / "src" / "layouts" / "Layout.astro")
+    
+    # Copy index.astro
+    index_src = astro_template_dir / "src" / "pages" / "index.astro"
+    shutil.copy2(index_src, output_path / "src" / "pages" / "index.astro")
+    
+    # Copy config files
+    for config_file in ["astro.config.mjs", "package.json", "README.md"]:
+        config_src = astro_template_dir / config_file
+        if config_src.exists():
+            shutil.copy2(config_src, output_path / config_file)
     
     # Copy CSS to public folder
     shutil.copy2(css_path, output_path / "public" / "styles" / "main.css")
@@ -534,9 +546,11 @@ def main() -> None:
         
         if args.astro:
             # Generate Astro-based portfolio
+            # Use different default output dir for Astro to avoid conflicts
+            output_dir = args.output_dir if args.output_dir != "dist" else "dist-astro"
             result = generate_astro_portfolio(
                 payload,
-                output_dir=args.output_dir,
+                output_dir=output_dir,
                 site_template=args.site_template,
                 design_theme=args.design_theme,
             )

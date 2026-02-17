@@ -126,6 +126,42 @@ class APIServerTest(unittest.TestCase):
         data = json.loads(response.data)
         self.assertIn('error', data)
     
+    def test_generate_astro_portfolio_basic(self):
+        """Test Astro-based portfolio generation endpoint."""
+        portfolio_data = {
+            "user_id": "astro-test-user-001",
+            "basics": {
+                "name": "Astro Test User",
+                "summary": "Astro test bio"
+            },
+            "projects": [
+                {
+                    "name": "Test Astro Project",
+                    "description": "Testing Astro generation"
+                }
+            ]
+        }
+
+        response = self.client.post(
+            '/api/generate-astro',
+            data=json.dumps(portfolio_data),
+            content_type='application/json'
+        )
+
+        self.assertEqual(response.status_code, 201)
+        data = json.loads(response.data)
+        
+        self.assertTrue(data['success'])
+        self.assertEqual(data['type'], 'astro')
+        self.assertIn('portfolio_id', data)
+        self.assertIn('dev_command', data)
+        self.assertIn('build_command', data)
+        
+        # Verify portfolio was registered
+        portfolio_id = data['portfolio_id']
+        self.assertIn(portfolio_id, PORTFOLIO_REGISTRY)
+        self.assertEqual(PORTFOLIO_REGISTRY[portfolio_id]['type'], 'astro')
+    
     def test_get_portfolio_not_found(self):
         """Test getting non-existent portfolio."""
         response = self.client.get('/api/portfolio/non-existent-id')

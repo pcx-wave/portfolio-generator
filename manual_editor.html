@@ -737,7 +737,7 @@
             const dataParam = urlParams.get('data');
             if (dataParam) {
                 try {
-                    const data = JSON.parse(decodeURIComponent(dataParam));
+                    const data = JSON.parse(dataParam);
                     prefillForm(data);
                 } catch (e) {
                     console.error('Error parsing URL data:', e);
@@ -757,8 +757,21 @@
         // Setup PostMessage listener for iframe communication
         function setupPostMessageListener() {
             window.addEventListener('message', function(event) {
-                // In production, validate event.origin for security
-                // if (event.origin !== "https://jobsmatch.com") return;
+                // Validate event.origin for security
+                // In production, configure this with actual allowed origins
+                const allowedOrigins = [
+                    window.location.origin,  // Same origin
+                    "https://jobsmatch.com",
+                    "https://www.jobsmatch.com"
+                ];
+                
+                // Skip validation for local development
+                if (event.origin.startsWith('http://localhost') || event.origin.startsWith('http://127.0.0.1')) {
+                    // Allow local development
+                } else if (!allowedOrigins.includes(event.origin)) {
+                    console.warn('PostMessage from untrusted origin:', event.origin);
+                    return;
+                }
                 
                 if (event.data.type === 'prefill-data') {
                     prefillForm(event.data.data);
@@ -768,7 +781,7 @@
                     event.source.postMessage({
                         type: 'form-data',
                         data: formData
-                    }, '*');
+                    }, event.origin);  // Use event.origin instead of '*'
                 }
             });
         }

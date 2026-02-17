@@ -14,7 +14,7 @@ Ce dépôt contient un script Python pour générer des portfolios statiques ave
 
 ## Installation
 ```bash
-pip install requests pyyaml flask flask-cors
+pip install flask flask-cors
 ```
 
 ## 🚀 Génération Astro (Nouveau!)
