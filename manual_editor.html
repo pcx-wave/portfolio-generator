@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Éditeur de Portfolio - Édition Manuelle</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            padding: 40px;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+
+        .form-section {
+            margin-bottom: 30px;
+            padding: 25px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+
+        .form-section h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .form-section h2::before {
+            content: '▶';
+            font-size: 0.8em;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+        }
+
+        input[type="text"],
+        input[type="email"],
+        input[type="tel"],
+        input[type="url"],
+        textarea,
+        select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        input:focus,
+        textarea:focus,
+        select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .dynamic-list {
+            background: white;
+            padding: 20px;
+            border-radius: 6px;
+            margin-top: 15px;
+        }
+
+        .dynamic-item {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            border: 1px solid #e0e0e0;
+            position: relative;
+        }
+
+        .dynamic-item h4 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.1em;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-right: 10px;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #218838;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+            padding: 8px 16px;
+            font-size: 12px;
+        }
+
+        .btn-danger:hover {
+            background: #c82333;
+        }
+
+        .btn-remove {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+        }
+
+        .action-buttons {
+            margin-top: 30px;
+            padding-top: 30px;
+            border-top: 2px solid #e0e0e0;
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            .container {
+                padding: 20px;
+            }
+
+            h1 {
+                font-size: 2em;
+            }
+        }
+
+        .help-text {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+            font-style: italic;
+        }
+
+        .output-section {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            display: none;
+        }
+
+        .output-section.active {
+            display: block;
+        }
+
+        .output-section pre {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 20px;
+            border-radius: 6px;
+            overflow-x: auto;
+            max-height: 500px;
+        }
+
+        .success-message {
+            background: #d4edda;
+            color: #155724;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            border: 1px solid #c3e6cb;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📝 Éditeur de Portfolio</h1>
+        <p class="subtitle">Éditez manuellement tous les champs de votre portfolio avant génération</p>
+
+        <form id="portfolioForm">
+            <!-- Section: Informations de base -->
+            <div class="form-section">
+                <h2>Informations de base</h2>
+                <div class="form-group">
+                    <label for="name">Nom complet *</label>
+                    <input type="text" id="name" name="name" required placeholder="Ex: Marie Dupont">
+                </div>
+                <div class="form-group">
+                    <label for="headline">Titre/Fonction</label>
+                    <input type="text" id="headline" name="headline" placeholder="Ex: Développeuse Full-Stack">
+                    <p class="help-text">Votre titre professionnel ou fonction principale</p>
+                </div>
+                <div class="form-group">
+                    <label for="bio">Biographie *</label>
+                    <textarea id="bio" name="bio" required placeholder="Présentez-vous en quelques lignes..."></textarea>
+                    <p class="help-text">Une brève description de votre parcours et expertise</p>
+                </div>
+                <div class="form-group">
+                    <label for="photo_url">URL de la photo de profil</label>
+                    <input type="url" id="photo_url" name="photo_url" placeholder="https://example.com/photo.jpg">
+                    <p class="help-text">Laisser vide pour utiliser une image par défaut</p>
+                </div>
+            </div>
+
+            <!-- Section: Contact -->
+            <div class="form-section">
+                <h2>Informations de contact</h2>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="email">Email</label>
+                        <input type="email" id="email" name="email" placeholder="marie@example.com">
+                    </div>
+                    <div class="form-group">
+                        <label for="phone">Téléphone</label>
+                        <input type="tel" id="phone" name="phone" placeholder="+33 6 12 34 56 78">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="address">Adresse</label>
+                    <input type="text" id="address" name="address" placeholder="1 rue de la République, 75001 Paris">
+                </div>
+            </div>
+
+            <!-- Section: Profils sociaux -->
+            <div class="form-section">
+                <h2>Profils sociaux</h2>
+                <div id="profilesList" class="dynamic-list"></div>
+                <button type="button" class="btn btn-secondary" onclick="addProfile()">+ Ajouter un profil</button>
+            </div>
+
+            <!-- Section: Compétences -->
+            <div class="form-section">
+                <h2>Compétences</h2>
+                <div id="skillsList" class="dynamic-list"></div>
+                <button type="button" class="btn btn-secondary" onclick="addSkill()">+ Ajouter une compétence</button>
+            </div>
+
+            <!-- Section: Formation -->
+            <div class="form-section">
+                <h2>Formation</h2>
+                <div id="educationList" class="dynamic-list"></div>
+                <button type="button" class="btn btn-secondary" onclick="addEducation()">+ Ajouter une formation</button>
+            </div>
+
+            <!-- Section: Projets -->
+            <div class="form-section">
+                <h2>Projets & Réalisations</h2>
+                <div id="projectsList" class="dynamic-list"></div>
+                <button type="button" class="btn btn-secondary" onclick="addProject()">+ Ajouter un projet</button>
+            </div>
+
+            <!-- Section: Configuration -->
+            <div class="form-section">
+                <h2>Configuration du site</h2>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="site_template">Type de site</label>
+                        <select id="site_template" name="site_template">
+                            <option value="hybrid">Hybride (Portfolio + CV)</option>
+                            <option value="portfolio">Portfolio uniquement</option>
+                            <option value="cv">CV uniquement</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="design_theme">Thème de design</label>
+                        <select id="design_theme" name="design_theme">
+                            <option value="classic">Classique</option>
+                            <option value="modern">Moderne</option>
+                            <option value="contrast">Contraste élevé</option>
+                            <option value="artistic">Artistique</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="action-buttons">
+                <button type="submit" class="btn btn-primary">✓ Générer le JSON</button>
+                <button type="button" class="btn btn-secondary" onclick="loadExample()">📋 Charger un exemple</button>
+                <button type="button" class="btn btn-secondary" onclick="clearForm()">🗑️ Réinitialiser</button>
+            </div>
+        </form>
+
+        <!-- Output Section -->
+        <div id="outputSection" class="output-section">
+            <h2>JSON généré</h2>
+            <p class="success-message">✓ JSON généré avec succès ! Vous pouvez copier ce JSON et l'utiliser avec le générateur de portfolio.</p>
+            <button type="button" class="btn btn-secondary" onclick="copyJSON()">📋 Copier le JSON</button>
+            <button type="button" class="btn btn-secondary" onclick="downloadJSON()">💾 Télécharger le JSON</button>
+            <pre id="jsonOutput"></pre>
+        </div>
+    </div>
+
+    <script>
+        let profileCounter = 0;
+        let skillCounter = 0;
+        let educationCounter = 0;
+        let projectCounter = 0;
+
+        // Add Profile
+        function addProfile() {
+            profileCounter++;
+            const profilesList = document.getElementById('profilesList');
+            const profileDiv = document.createElement('div');
+            profileDiv.className = 'dynamic-item';
+            profileDiv.id = `profile-${profileCounter}`;
+            profileDiv.innerHTML = `
+                <button type="button" class="btn btn-danger btn-remove" onclick="removeItem('profile-${profileCounter}')">✕</button>
+                <h4>Profil ${profileCounter}</h4>
+                <div class="form-group">
+                    <label>Réseau social</label>
+                    <input type="text" name="profile_network_${profileCounter}" placeholder="Ex: LinkedIn, GitHub, Twitter">
+                </div>
+                <div class="form-group">
+                    <label>URL du profil</label>
+                    <input type="url" name="profile_url_${profileCounter}" placeholder="https://linkedin.com/in/votre-profil">
+                </div>
+            `;
+            profilesList.appendChild(profileDiv);
+        }
+
+        // Add Skill
+        function addSkill() {
+            skillCounter++;
+            const skillsList = document.getElementById('skillsList');
+            const skillDiv = document.createElement('div');
+            skillDiv.className = 'dynamic-item';
+            skillDiv.id = `skill-${skillCounter}`;
+            skillDiv.innerHTML = `
+                <button type="button" class="btn btn-danger btn-remove" onclick="removeItem('skill-${skillCounter}')">✕</button>
+                <h4>Compétence ${skillCounter}</h4>
+                <div class="form-group">
+                    <label>Nom de la compétence</label>
+                    <input type="text" name="skill_name_${skillCounter}" placeholder="Ex: JavaScript, Python, Management">
+                </div>
+            `;
+            skillsList.appendChild(skillDiv);
+        }
+
+        // Add Education
+        function addEducation() {
+            educationCounter++;
+            const educationList = document.getElementById('educationList');
+            const educationDiv = document.createElement('div');
+            educationDiv.className = 'dynamic-item';
+            educationDiv.id = `education-${educationCounter}`;
+            educationDiv.innerHTML = `
+                <button type="button" class="btn btn-danger btn-remove" onclick="removeItem('education-${educationCounter}')">✕</button>
+                <h4>Formation ${educationCounter}</h4>
+                <div class="form-group">
+                    <label>Établissement</label>
+                    <input type="text" name="education_institution_${educationCounter}" placeholder="Ex: Université Paris-Saclay">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Diplôme</label>
+                        <input type="text" name="education_studyType_${educationCounter}" placeholder="Ex: Master">
+                    </div>
+                    <div class="form-group">
+                        <label>Domaine</label>
+                        <input type="text" name="education_area_${educationCounter}" placeholder="Ex: Informatique">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Date de début</label>
+                        <input type="text" name="education_startDate_${educationCounter}" placeholder="2018">
+                    </div>
+                    <div class="form-group">
+                        <label>Date de fin</label>
+                        <input type="text" name="education_endDate_${educationCounter}" placeholder="2020">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Note/Mention (optionnel)</label>
+                    <input type="text" name="education_score_${educationCounter}" placeholder="Ex: 16/20, Mention Bien">
+                </div>
+            `;
+            educationList.appendChild(educationDiv);
+        }
+
+        // Add Project
+        function addProject() {
+            projectCounter++;
+            const projectsList = document.getElementById('projectsList');
+            const projectDiv = document.createElement('div');
+            projectDiv.className = 'dynamic-item';
+            projectDiv.id = `project-${projectCounter}`;
+            projectDiv.innerHTML = `
+                <button type="button" class="btn btn-danger btn-remove" onclick="removeItem('project-${projectCounter}')">✕</button>
+                <h4>Projet ${projectCounter}</h4>
+                <div class="form-group">
+                    <label>Titre du projet</label>
+                    <input type="text" name="project_title_${projectCounter}" placeholder="Ex: Application de gestion">
+                </div>
+                <div class="form-group">
+                    <label>Description</label>
+                    <textarea name="project_description_${projectCounter}" placeholder="Décrivez le projet, les technologies utilisées, votre rôle..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label>URL de l'image (optionnel)</label>
+                    <input type="url" name="project_image_${projectCounter}" placeholder="https://example.com/project.jpg">
+                </div>
+            `;
+            projectsList.appendChild(projectDiv);
+        }
+
+        // Remove Item
+        function removeItem(id) {
+            const item = document.getElementById(id);
+            if (item) {
+                item.remove();
+            }
+        }
+
+        // Form Submit
+        document.getElementById('portfolioForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            
+            // Build basics object
+            const basics = {
+                name: formData.get('name'),
+                summary: formData.get('bio'),
+                label: formData.get('headline') || undefined,
+                image: formData.get('photo_url') || undefined,
+                email: formData.get('email') || undefined,
+                phone: formData.get('phone') || undefined,
+                location: formData.get('address') ? {
+                    address: formData.get('address')
+                } : undefined,
+                profiles: []
+            };
+
+            // Collect profiles
+            for (let i = 1; i <= profileCounter; i++) {
+                const network = formData.get(`profile_network_${i}`);
+                const url = formData.get(`profile_url_${i}`);
+                if (network || url) {
+                    basics.profiles.push({
+                        network: network || undefined,
+                        url: url || undefined
+                    });
+                }
+            }
+
+            // Collect skills
+            const skills = [];
+            for (let i = 1; i <= skillCounter; i++) {
+                const name = formData.get(`skill_name_${i}`);
+                if (name) {
+                    skills.push({ name: name });
+                }
+            }
+
+            // Collect education
+            const education = [];
+            for (let i = 1; i <= educationCounter; i++) {
+                const institution = formData.get(`education_institution_${i}`);
+                const studyType = formData.get(`education_studyType_${i}`);
+                const area = formData.get(`education_area_${i}`);
+                const startDate = formData.get(`education_startDate_${i}`);
+                const endDate = formData.get(`education_endDate_${i}`);
+                const score = formData.get(`education_score_${i}`);
+                
+                if (institution || studyType || area) {
+                    education.push({
+                        institution: institution || undefined,
+                        studyType: studyType || undefined,
+                        area: area || undefined,
+                        startDate: startDate || undefined,
+                        endDate: endDate || undefined,
+                        score: score || undefined
+                    });
+                }
+            }
+
+            // Collect projects
+            const projects = [];
+            for (let i = 1; i <= projectCounter; i++) {
+                const title = formData.get(`project_title_${i}`);
+                const description = formData.get(`project_description_${i}`);
+                const image = formData.get(`project_image_${i}`);
+                
+                if (title || description) {
+                    projects.push({
+                        name: title || undefined,
+                        description: description || undefined,
+                        image: image || undefined
+                    });
+                }
+            }
+
+            // Build final JSON
+            const portfolioData = {
+                basics: basics,
+                skills: skills.length > 0 ? skills : undefined,
+                education: education.length > 0 ? education : undefined,
+                projects: projects.length > 0 ? projects : undefined
+            };
+
+            // Remove undefined values
+            const cleanedData = JSON.parse(JSON.stringify(portfolioData));
+
+            // Display JSON
+            document.getElementById('jsonOutput').textContent = JSON.stringify(cleanedData, null, 2);
+            document.getElementById('outputSection').classList.add('active');
+            
+            // Scroll to output
+            document.getElementById('outputSection').scrollIntoView({ behavior: 'smooth' });
+        });
+
+        // Copy JSON
+        function copyJSON() {
+            const jsonText = document.getElementById('jsonOutput').textContent;
+            navigator.clipboard.writeText(jsonText).then(() => {
+                alert('JSON copié dans le presse-papier !');
+            });
+        }
+
+        // Download JSON
+        function downloadJSON() {
+            const jsonText = document.getElementById('jsonOutput').textContent;
+            const blob = new Blob([jsonText], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'portfolio_data.json';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        // Load Example
+        function loadExample() {
+            document.getElementById('name').value = 'Marie Dupont';
+            document.getElementById('headline').value = 'Développeuse Full-Stack';
+            document.getElementById('bio').value = 'Passionnée par le développement web moderne et les architectures scalables. Plus de 5 ans d\'expérience en JavaScript et Python.';
+            document.getElementById('photo_url').value = 'https://example.com/marie.jpg';
+            document.getElementById('email').value = 'marie.dupont@example.com';
+            document.getElementById('phone').value = '+33 6 12 34 56 78';
+            document.getElementById('address').value = '42 Avenue des Champs-Élysées, 75008 Paris';
+            
+            // Add example profile
+            addProfile();
+            document.querySelector('[name="profile_network_1"]').value = 'LinkedIn';
+            document.querySelector('[name="profile_url_1"]').value = 'https://linkedin.com/in/marie-dupont';
+            
+            // Add example skill
+            addSkill();
+            document.querySelector('[name="skill_name_1"]').value = 'JavaScript';
+            addSkill();
+            document.querySelector('[name="skill_name_2"]').value = 'React';
+            addSkill();
+            document.querySelector('[name="skill_name_3"]').value = 'Node.js';
+            
+            // Add example education
+            addEducation();
+            document.querySelector('[name="education_institution_1"]').value = 'Université Paris-Saclay';
+            document.querySelector('[name="education_studyType_1"]').value = 'Master';
+            document.querySelector('[name="education_area_1"]').value = 'Informatique';
+            document.querySelector('[name="education_startDate_1"]').value = '2016';
+            document.querySelector('[name="education_endDate_1"]').value = '2018';
+            document.querySelector('[name="education_score_1"]').value = 'Mention Bien';
+            
+            // Add example project
+            addProject();
+            document.querySelector('[name="project_title_1"]').value = 'Plateforme E-commerce';
+            document.querySelector('[name="project_description_1"]').value = 'Développement d\'une plateforme e-commerce complète avec React et Node.js. Gestion de plus de 10 000 produits.';
+            document.querySelector('[name="project_image_1"]').value = '';
+            
+            alert('Exemple chargé ! Vous pouvez maintenant modifier les champs.');
+        }
+
+        // Clear Form
+        function clearForm() {
+            if (confirm('Êtes-vous sûr de vouloir réinitialiser le formulaire ?')) {
+                document.getElementById('portfolioForm').reset();
+                document.getElementById('profilesList').innerHTML = '';
+                document.getElementById('skillsList').innerHTML = '';
+                document.getElementById('educationList').innerHTML = '';
+                document.getElementById('projectsList').innerHTML = '';
+                document.getElementById('outputSection').classList.remove('active');
+                profileCounter = 0;
+                skillCounter = 0;
+                educationCounter = 0;
+                projectCounter = 0;
+            }
+        }
+
+        // Initialize with one project
+        window.addEventListener('load', function() {
+            addProject();
+        });
+    </script>
+</body>
+</html>

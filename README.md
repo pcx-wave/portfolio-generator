@@ -11,17 +11,35 @@ Ce dépôt contient un script Python pour générer des portfolios statiques ave
 pip install requests pyyaml
 ```
 
+## Édition Manuelle des Champs
+
+**Nouveau !** Vous pouvez maintenant éditer manuellement tous les champs avant génération via l'interface web :
+
+1. Ouvrez `manual_editor.html` dans votre navigateur
+2. Remplissez tous les champs (nom, bio, projets, compétences, formation, etc.)
+3. Ajoutez/supprimez dynamiquement des projets, compétences, formations et profils sociaux
+4. Cliquez sur "Générer le JSON" pour créer votre fichier de données
+5. Copiez ou téléchargez le JSON généré
+6. Utilisez ce JSON avec le générateur de portfolio
+
+L'éditeur manuel permet de :
+- ✓ Éditer tous les champs de manière interactive
+- ✓ Ajouter/supprimer des projets, compétences, formations
+- ✓ Prévisualiser le JSON avant génération
+- ✓ Copier ou télécharger le JSON
+- ✓ Charger un exemple pré-rempli pour démarrer rapidement
+
 ## Utilisation (module appelable par un autre service)
 Le module expose `generate_portfolio(user_data, output_dir="dist", site_template="hybrid", design_theme="classic")` pour être appelé directement par votre service de matching.
 
 ### Workflow cible (JSON Resume -> template -> draft -> édition -> validation -> déploiement)
 
 Oui, le process est bien celui-ci :
-1. Réception de données JSON Resume (ou format simple legacy)
+1. **Édition manuelle AVANT génération** (nouveau!) via `manual_editor.html` OU réception de données JSON Resume (ou format simple legacy)
 2. Sélection du template de site (`portfolio`, `cv`, `hybrid`)
 3. Sélection du design (`classic`, `modern`, `contrast`, `artistic`)
 4. Génération d'un **draft** statique
-5. Édition manuelle éventuelle via Decap CMS (`/admin`)
+5. **Édition manuelle APRÈS génération** via Decap CMS (`/admin`)
 6. Validation explicite du draft
 7. Déploiement (Netlify-ready)
 
