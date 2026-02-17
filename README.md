@@ -179,9 +179,99 @@ Validation d'un draft généré :
 python generate_portfolio.py --validate --output-dir dist/user-123
 ```
 
-## Intégration avec JobsMatch
-- Utilise le formulaire `form_example.html` pour collecter les données.
-- Appelle le script via une API ou un backend.
+## Intégration avec JobsMatch et Édition à Distance
+
+### Mode 1: API REST (Recommandé pour JobsMatch)
+
+Le générateur propose maintenant une **API REST complète** pour l'intégration avec des plateformes externes.
+
+**Démarrer le serveur API:**
+```bash
+pip install flask flask-cors
+python api_server.py
+```
+
+**Endpoints disponibles:**
+- `POST /api/generate` - Créer un portfolio depuis JobsMatch
+- `GET /api/portfolio/<id>` - Récupérer les données du portfolio
+- `PUT /api/portfolio/<id>` - Mettre à jour un portfolio
+- `GET /editor` - Éditeur manuel accessible à distance
+- `GET /editor/<id>` - Éditeur pré-rempli avec données existantes
+
+**Exemple d'intégration Python (pour JobsMatch):**
+```python
+import requests
+
+# Créer un portfolio pour un utilisateur JobsMatch
+response = requests.post('http://api.example.com/api/generate', json={
+    "user_id": "jobsmatch-user-123",
+    "basics": {
+        "name": "Alice Dupont",
+        "summary": "Développeuse Full-Stack",
+        "email": "alice@jobsmatch.com"
+    },
+    "projects": [...],
+    "skills": [...],
+    "site_template": "hybrid",
+    "design_theme": "modern"
+})
+
+result = response.json()
+portfolio_url = result['portfolio_url']
+editor_url = result['editor_url']  # URL pour que l'utilisateur édite son portfolio
+```
+
+**Intégration iframe (pour édition dans JobsMatch):**
+```html
+<!-- Dans la page de profil JobsMatch -->
+<iframe 
+    src="http://api.example.com/editor/{portfolio_id}"
+    width="100%" 
+    height="800px">
+</iframe>
+```
+
+**Voir la documentation complète:**
+- [`API_DOCUMENTATION.md`](API_DOCUMENTATION.md) - Documentation complète de l'API
+- [`jobsmatch_integration_example.py`](jobsmatch_integration_example.py) - Exemples d'intégration
+
+### Mode 2: Éditeur Manuel avec Paramètres URL
+
+L'éditeur manuel supporte maintenant le pré-remplissage via URL:
+
+```
+http://localhost:8080/manual_editor.html?name=Alice&bio=Développeuse&email=alice@example.com
+```
+
+Ou avec JSON complet:
+```javascript
+const data = {basics: {name: "Alice", summary: "Bio"}};
+const url = `editor.html?data=${encodeURIComponent(JSON.stringify(data))}`;
+```
+
+### Mode 3: Communication PostMessage (pour iframes)
+
+L'éditeur supporte la communication bidirectionnelle avec des applications parentes:
+
+```javascript
+// Dans JobsMatch (fenêtre parente)
+const editor = document.getElementById('portfolio-editor-frame');
+
+// Écouter les événements de l'éditeur
+window.addEventListener('message', function(event) {
+    if (event.data.type === 'portfolio-generated') {
+        console.log('Portfolio créé:', event.data.data);
+        // Sauvegarder dans JobsMatch
+        saveToJobsMatch(event.data.data);
+    }
+});
+
+// Pré-remplir l'éditeur
+editor.contentWindow.postMessage({
+    type: 'prefill-data',
+    data: userDataFromJobsMatch
+}, '*');
+```
 
 ## Structure
 - `templates/` : Templates HTML/CSS
