@@ -10,10 +10,38 @@
 <body>
     <header>
         <div class="container">
+            <img class="profile-photo" src="{{photo_url}}" alt="Photo de {{name}}">
             <h1>{{name}}</h1>
+            <p class="headline">{{headline}}</p>
             <p id="user-bio">{{bio}}</p>
+            <p class="contact-line">{{contact_line}}</p>
+            <p class="address-line">{{address_line}}</p>
         </div>
     </header>
+    <section class="resume-section">
+        <div class="container">
+            <h2>Profils</h2>
+            <ul class="profiles-list">
+                {{profiles_html}}
+            </ul>
+        </div>
+    </section>
+    <section class="resume-section">
+        <div class="container">
+            <h2>Compétences</h2>
+            <div class="skills-list">
+                {{skills_html}}
+            </div>
+        </div>
+    </section>
+    <section class="resume-section">
+        <div class="container">
+            <h2>Formation</h2>
+            <div class="education-list">
+                {{education_html}}
+            </div>
+        </div>
+    </section>
     <section id="projects" class="realisations">
         <div class="container">
             <h2>{{section_title}}</h2>

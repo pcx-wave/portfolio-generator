@@ -10,6 +10,7 @@ from typing import Any, Dict, List
 
 
 DEFAULT_PROJECT_IMAGE = "https://via.placeholder.com/400x250/0077b6/FFFFFF?text=Project"
+DEFAULT_PROFILE_PHOTO = "https://via.placeholder.com/240x240/2c3e50/FFFFFF?text=Profile"
 DEFAULT_TEMPLATE_MODE = "hybrid"
 TEMPLATE_MODES = {"portfolio", "cv", "hybrid"}
 SECTION_TITLE_BY_TEMPLATE = {"portfolio": "Réalisations", "cv": "Expériences", "hybrid": "Réalisations & Expériences"}
@@ -79,8 +80,48 @@ def _normalize_projects(projects: Any) -> List[Dict[str, str]]:
     return normalized
 
 
+def _normalize_profiles(profiles: Any) -> List[Dict[str, str]]:
+    normalized: List[Dict[str, str]] = []
+    for profile in profiles or []:
+        network = _sanitize_text(profile.get("network"))
+        url = _sanitize_text(profile.get("url") or profile.get("username"))
+        if network or url:
+            normalized.append({"network": network or "Profil", "url": url})
+    return normalized
+
+
+def _normalize_skills(skills: Any) -> List[str]:
+    normalized: List[str] = []
+    for skill in skills or []:
+        name = _sanitize_text(skill.get("name"))
+        if name:
+            normalized.append(name)
+        for keyword in skill.get("keywords") or []:
+            normalized.append(_sanitize_text(keyword))
+    return [value for value in normalized if value]
+
+
+def _normalize_education(education: Any) -> List[Dict[str, str]]:
+    normalized: List[Dict[str, str]] = []
+    for item in education or []:
+        title = " - ".join(
+            filter(None, [_sanitize_text(item.get("studyType")), _sanitize_text(item.get("area"))])
+        )
+        period = " → ".join(filter(None, [_sanitize_text(item.get("startDate")), _sanitize_text(item.get("endDate"))]))
+        normalized.append(
+            {
+                "institution": _sanitize_text(item.get("institution")),
+                "title": title,
+                "period": period,
+                "score": _sanitize_text(item.get("score")),
+            }
+        )
+    return normalized
+
+
 def _cv_to_portfolio_payload(cv_data: Dict[str, Any], site_template: str = DEFAULT_TEMPLATE_MODE) -> Dict[str, Any]:
     basics = cv_data.get("basics") or {}
+    location = basics.get("location") or {}
     mapped_projects: List[Dict[str, str]] = []
 
     for project in cv_data.get("projects") or []:
@@ -119,6 +160,24 @@ def _cv_to_portfolio_payload(cv_data: Dict[str, Any], site_template: str = DEFAU
         "user_id": cv_data.get("user_id") or basics.get("email"),
         "name": basics.get("name"),
         "bio": basics.get("summary") or basics.get("label"),
+        "headline": basics.get("label"),
+        "photo_url": basics.get("image"),
+        "email": basics.get("email"),
+        "phone": basics.get("phone"),
+        "address_line": " | ".join(
+            filter(
+                None,
+                [
+                    location.get("address"),
+                    " ".join(filter(None, [location.get("postalCode"), location.get("city")])),
+                    location.get("region"),
+                    location.get("countryCode"),
+                ],
+            )
+        ),
+        "profiles": basics.get("profiles") or [],
+        "skills": cv_data.get("skills") or [],
+        "education": cv_data.get("education") or [],
         "projects": selected_projects,
     }
 
@@ -155,6 +214,24 @@ def build_portfolio_record(user_data: Dict[str, Any], site_template: str = DEFAU
         "user_id": user_id,
         "name": _sanitize_text(normalized_payload.get("name")),
         "bio": _sanitize_text(normalized_payload.get("bio")),
+        "headline": _sanitize_text(normalized_payload.get("headline") or "Profil professionnel"),
+        "photo_url": _sanitize_text(normalized_payload.get("photo_url") or DEFAULT_PROFILE_PHOTO),
+        "contact_line": (
+            " | ".join(
+                filter(
+                    None,
+                    [
+                        _sanitize_text(normalized_payload.get("email")),
+                        _sanitize_text(normalized_payload.get("phone")),
+                    ],
+                )
+            )
+            or "Contact non renseigné"
+        ),
+        "address_line": _sanitize_text(normalized_payload.get("address_line") or "Adresse non renseignée"),
+        "profiles": _normalize_profiles(normalized_payload.get("profiles")),
+        "skills": _normalize_skills(normalized_payload.get("skills")),
+        "education": _normalize_education(normalized_payload.get("education")),
         "projects": projects,
         "created_at": now,
         "updated_at": now,
@@ -220,6 +297,22 @@ def generate_portfolio(
     name = record["name"]
     bio = record["bio"]
     projects = record["projects"]
+    profiles_html = "\n".join(
+        f'<li><strong>{profile["network"]}</strong> : <a href="{profile["url"]}">{profile["url"]}</a></li>'
+        for profile in record["profiles"]
+    ) or "<li>Non renseigné</li>"
+    skills_html = "\n".join(f'<span class="skill-tag">{skill}</span>' for skill in record["skills"]) or "<span>Aucune</span>"
+    education_html = "\n".join(
+        (
+            '<div class="education-item">'
+            f"<h3>{item['institution']}</h3>"
+            f"<p>{item['title']}</p>"
+            f"<p>{item['period']}</p>"
+            f"<p>{item['score']}</p>"
+            "</div>"
+        )
+        for item in record["education"]
+    ) or '<div class="education-item"><h3>Formation non renseignée</h3></div>'
 
     html_template = template_path.read_text(encoding="utf-8")
     cards = "\n".join(
@@ -232,6 +325,13 @@ def generate_portfolio(
     )
     rendered_html = html_template.replace("{{name}}", name).replace("{{bio}}", bio)
     rendered_html = rendered_html.replace("{{section_title}}", SECTION_TITLE_BY_TEMPLATE[site_template])
+    rendered_html = rendered_html.replace("{{photo_url}}", record["photo_url"])
+    rendered_html = rendered_html.replace("{{headline}}", record["headline"])
+    rendered_html = rendered_html.replace("{{contact_line}}", record["contact_line"])
+    rendered_html = rendered_html.replace("{{address_line}}", record["address_line"])
+    rendered_html = rendered_html.replace("{{profiles_html}}", profiles_html)
+    rendered_html = rendered_html.replace("{{skills_html}}", skills_html)
+    rendered_html = rendered_html.replace("{{education_html}}", education_html)
     rendered_html, replaced = re.subn(
         r"\s*\{%\s*for project in projects\s*%\}.*?\{%\s*endfor\s*%\}",
         f"\n{cards}",
@@ -253,7 +353,22 @@ def generate_portfolio(
     (output_path / "admin" / "index.html").write_text(DECAP_ADMIN_INDEX, encoding="utf-8")
     (output_path / "admin" / "config.yml").write_text(DECAP_CONFIG_YML, encoding="utf-8")
     (output_path / "data" / "portfolio.json").write_text(
-        json.dumps({"name": name, "bio": bio, "projects": projects}, ensure_ascii=False, indent=2),
+        json.dumps(
+            {
+                "name": name,
+                "bio": bio,
+                "headline": record["headline"],
+                "photo_url": record["photo_url"],
+                "contact_line": record["contact_line"],
+                "address_line": record["address_line"],
+                "profiles": record["profiles"],
+                "skills": record["skills"],
+                "education": record["education"],
+                "projects": projects,
+            },
+            ensure_ascii=False,
+            indent=2,
+        ),
         encoding="utf-8",
     )
     (output_path / "data" / "portfolio_document.json").write_text(

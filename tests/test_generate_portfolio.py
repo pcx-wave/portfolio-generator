@@ -47,7 +47,22 @@ class GeneratePortfolioTest(unittest.TestCase):
 
     def test_accepts_cv_augmented_input_format(self) -> None:
         cv_data = {
-            "basics": {"name": "Marie Curie", "summary": "Data scientist"},
+            "basics": {
+                "name": "Marie Curie",
+                "summary": "Data scientist",
+                "label": "Senior Data Scientist",
+                "email": "marie@example.com",
+                "phone": "+33 6 12 34 56 78",
+                "image": "https://example.com/marie.jpg",
+                "location": {
+                    "address": "1 rue des Sciences",
+                    "postalCode": "75005",
+                    "city": "Paris",
+                    "region": "IDF",
+                    "countryCode": "FR",
+                },
+                "profiles": [{"network": "LinkedIn", "url": "https://linkedin.com/in/marie"}],
+            },
             "work": [
                 {
                     "name": "LabX",
@@ -56,6 +71,17 @@ class GeneratePortfolioTest(unittest.TestCase):
                     "highlights": ["Improved precision", "Reduced latency"],
                 }
             ],
+            "education": [
+                {
+                    "institution": "Sorbonne",
+                    "studyType": "Master",
+                    "area": "Data Science",
+                    "startDate": "2018",
+                    "endDate": "2020",
+                    "score": "16/20",
+                }
+            ],
+            "skills": [{"name": "Python", "keywords": ["Pandas", "Scikit-learn"]}],
             "projects": [{"name": "Matching API", "description": "API for recommendations", "image": ""}],
         }
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -68,6 +94,15 @@ class GeneratePortfolioTest(unittest.TestCase):
             self.assertEqual(2, len(data_content["projects"]))
             self.assertEqual("Matching API", data_content["projects"][0]["title"])
             self.assertEqual("ML Engineer - LabX", data_content["projects"][1]["title"])
+            self.assertEqual("https://example.com/marie.jpg", data_content["photo_url"])
+            self.assertIn("marie@example.com", data_content["contact_line"])
+            self.assertEqual("1 rue des Sciences | 75005 Paris | IDF | FR", data_content["address_line"])
+            self.assertEqual("Sorbonne", data_content["education"][0]["institution"])
+
+            html_content = (output / "index.html").read_text(encoding="utf-8")
+            self.assertIn("Senior Data Scientist", html_content)
+            self.assertIn("LinkedIn", html_content)
+            self.assertIn("Master - Data Science", html_content)
 
     def test_supports_template_selection_and_validation_state(self) -> None:
         cv_data = {

@@ -28,6 +28,64 @@ header {
     padding: 2rem 0;
 }
 
+.profile-photo {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid white;
+}
+
+.headline {
+    margin: 0.5rem 0 0;
+    font-weight: 600;
+}
+
+.contact-line,
+.address-line {
+    margin: 0.3rem 0;
+    opacity: 0.9;
+}
+
+.resume-section {
+    background: var(--light-color);
+}
+
+.resume-section:nth-of-type(even) {
+    background: white;
+}
+
+.profiles-list {
+    margin: 0;
+    padding-left: 1.2rem;
+}
+
+.skills-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.skill-tag {
+    display: inline-block;
+    padding: 0.35rem 0.7rem;
+    border-radius: 999px;
+    background: var(--secondary-color);
+    color: white;
+    font-size: 0.9rem;
+}
+
+.education-list {
+    display: grid;
+    gap: 1rem;
+}
+
+.education-item {
+    background: white;
+    padding: 1rem;
+    border-left: 4px solid var(--primary-color);
+}
+
 .project-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));

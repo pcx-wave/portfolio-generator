@@ -31,6 +31,7 @@ Le générateur supporte **2 formats d'entrée** :
 
 - **Format portfolio simple (historique)** : `templates/input_template_legacy.json`
 - **Format CV augmenté (JSON Resume-like)** : `templates/input_template_cv_augmente.json`
+- **Format JSON Resume complet (démo placeholders)** : `templates/input_template_jsonresume_full.json`
 
 Format portfolio simple :
 
@@ -161,6 +162,7 @@ python generate_portfolio.py --validate --output-dir dist/user-123
 - `templates/` : Templates HTML/CSS
 - `templates/input_template_legacy.json` : Exemple format simple
 - `templates/input_template_cv_augmente.json` : Exemple format CV augmenté
+- `templates/input_template_jsonresume_full.json` : Exemple JSON Resume complet (photo, adresse, éducation, skills, profils)
 - `generate_portfolio.py` : Script principal
 - `form_example.html` : Exemple de formulaire
 
