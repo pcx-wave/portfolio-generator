@@ -12,10 +12,12 @@ Ce dépôt contient un script Python pour générer des portfolios statiques ave
 pip install requests pyyaml
 ```
 
-## Utilisation
-1. Remplace `TON_GITHUB_TOKEN` et `TON_NETLIFY_TOKEN` dans `generate_portfolio.py`.
-2. Exécute le script avec tes données utilisateur :
+## Utilisation (module appelable par un autre service)
+Le module expose `generate_portfolio(user_data, output_dir="dist")` pour être appelé directement par votre service de matching.
+
 ```python
+from generate_portfolio import generate_portfolio
+
 user_data = {
     "name": "Nom Utilisateur",
     "bio": "Bio de l'utilisateur",
@@ -23,7 +25,13 @@ user_data = {
         {"title": "Projet 1", "description": "Description", "image": "image.jpg"}
     ]
 }
-generate_portfolio(user_data)
+result = generate_portfolio(user_data, output_dir="dist/user-123")
+print(result)
+```
+
+Ou via CLI (utile pour intégration backend/worker) :
+```bash
+python generate_portfolio.py --input user_data.json --output-dir dist/user-123
 ```
 
 ## Intégration avec JobsMatch
@@ -35,8 +43,17 @@ generate_portfolio(user_data)
 - `generate_portfolio.py` : Script principal
 - `form_example.html` : Exemple de formulaire
 
-## Déploiement
-Chaque portfolio est déployé sur Netlify avec Decap CMS pour l'édition.
+## Déploiement Netlify + édition utilisateur
+Le site généré contient automatiquement :
+- `admin/index.html` et `admin/config.yml` (Decap CMS)
+- `data/portfolio.json` (contenu éditable)
+- `netlify.toml` (publication statique)
+
+Vous pouvez donc déployer le dossier généré directement sur Netlify, puis laisser l'utilisateur éditer son portfolio via `/admin`.
+
+## Option CMS Jamstack
+- **Par défaut : Decap CMS** (léger, Git-friendly, simple sur Netlify)
+- **Alternative possible : TinaCMS** si vous préférez une édition plus orientée React
 
 ## Licence
 MIT
