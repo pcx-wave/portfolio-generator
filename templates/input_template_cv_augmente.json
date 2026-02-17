@@ -1,0 +1,48 @@
+{
+  "user_id": "user-123",
+  "basics": {
+    "name": "Nom Utilisateur",
+    "label": "Développeur Full-Stack",
+    "email": "nom.utilisateur@example.com",
+    "summary": "Développeur orienté produit, spécialisé en APIs, data et automatisation.",
+    "profiles": [
+      {
+        "network": "LinkedIn",
+        "url": "https://www.linkedin.com/in/example"
+      },
+      {
+        "network": "GitHub",
+        "url": "https://github.com/example"
+      }
+    ]
+  },
+  "work": [
+    {
+      "name": "Tech Company",
+      "position": "Software Engineer",
+      "startDate": "2023-01-01",
+      "summary": "Développement de services backend pour le matching emploi.",
+      "highlights": [
+        "Conception d'APIs REST",
+        "Mise en place de pipelines CI/CD"
+      ]
+    }
+  ],
+  "skills": [
+    {
+      "name": "Python",
+      "keywords": ["FastAPI", "Data pipelines"]
+    },
+    {
+      "name": "JavaScript",
+      "keywords": ["React", "Node.js"]
+    }
+  ],
+  "projects": [
+    {
+      "name": "Portfolio Generator",
+      "description": "Génération de portfolios statiques depuis des CV enrichis.",
+      "image": "https://example.com/project-cover.png"
+    }
+  ]
+}

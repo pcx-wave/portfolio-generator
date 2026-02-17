@@ -1,0 +1,83 @@
+{
+  "user_id": "user-full-demo",
+  "basics": {
+    "name": "Aline Martin",
+    "label": "Senior Full-Stack Engineer",
+    "image": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=500",
+    "email": "aline.martin@example.com",
+    "phone": "+33 6 11 22 33 44",
+    "summary": "Ingénieure full-stack orientée produit, spécialisée en APIs, architecture data et plateformes RH.",
+    "location": {
+      "address": "42 avenue de l'Innovation",
+      "postalCode": "69003",
+      "city": "Lyon",
+      "region": "Auvergne-Rhône-Alpes",
+      "countryCode": "FR"
+    },
+    "profiles": [
+      {"network": "LinkedIn", "url": "https://www.linkedin.com/in/alinemartin"},
+      {"network": "GitHub", "url": "https://github.com/alinemartin"},
+      {"network": "Portfolio", "url": "https://alinemartin.dev"}
+    ]
+  },
+  "work": [
+    {
+      "name": "TalentFlow",
+      "position": "Lead Backend Engineer",
+      "startDate": "2022-01",
+      "endDate": "2025-02",
+      "summary": "Pilotage de la plateforme de matching candidat/offre.",
+      "highlights": [
+        "Conception d'une architecture microservices",
+        "Réduction du temps de matching de 45%",
+        "Industrialisation CI/CD et observabilité"
+      ]
+    },
+    {
+      "name": "DataBridge",
+      "position": "Software Engineer",
+      "startDate": "2019-04",
+      "endDate": "2021-12",
+      "summary": "Développement d'APIs B2B pour intégrations RH.",
+      "highlights": [
+        "Mise en production de 20+ connecteurs",
+        "Amélioration du taux de succès API à 99.95%"
+      ]
+    }
+  ],
+  "education": [
+    {
+      "institution": "INSA Lyon",
+      "studyType": "Diplôme d'ingénieur",
+      "area": "Informatique",
+      "startDate": "2014",
+      "endDate": "2019",
+      "score": "16.5/20"
+    },
+    {
+      "institution": "Université Claude Bernard Lyon 1",
+      "studyType": "DU",
+      "area": "Data Science Appliquée",
+      "startDate": "2018",
+      "endDate": "2019",
+      "score": "Mention Bien"
+    }
+  ],
+  "skills": [
+    {"name": "Python", "keywords": ["FastAPI", "Pandas", "ML Ops"]},
+    {"name": "JavaScript", "keywords": ["React", "Node.js", "TypeScript"]},
+    {"name": "Cloud", "keywords": ["AWS", "Terraform", "Docker", "Kubernetes"]}
+  ],
+  "projects": [
+    {
+      "name": "Portfolio Generator",
+      "description": "Génération de sites statiques personnalisés à partir de CV JSON Resume.",
+      "image": "https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=900"
+    },
+    {
+      "name": "Matching Insights Dashboard",
+      "description": "Tableau de bord analytics pour piloter la qualité du matching.",
+      "image": "https://images.unsplash.com/photo-1551281044-8d8d7c7f714b?w=900"
+    }
+  ]
+}
