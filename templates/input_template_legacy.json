@@ -1,0 +1,12 @@
+{
+  "user_id": "user-123",
+  "name": "Nom Utilisateur",
+  "bio": "Bio de l'utilisateur",
+  "projects": [
+    {
+      "title": "Projet 1",
+      "description": "Description du projet",
+      "image": "https://example.com/image.jpg"
+    }
+  ]
+}

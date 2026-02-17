@@ -17,7 +17,12 @@ Le module expose `generate_portfolio(user_data, output_dir="dist")` pour être a
 ### Comment le générateur fonctionne (input -> output, architecture NoSQL)
 
 #### 1) Input attendu
-Le générateur attend un objet JSON (ou dict Python) avec cette structure :
+Le générateur supporte **2 formats d'entrée** :
+
+- **Format portfolio simple (historique)** : `templates/input_template_legacy.json`
+- **Format CV augmenté (JSON Resume-like)** : `templates/input_template_cv_augmente.json`
+
+Format portfolio simple :
 
 ```json
 {
@@ -34,13 +39,40 @@ Le générateur attend un objet JSON (ou dict Python) avec cette structure :
 }
 ```
 
-- `name` : requis
-- `bio` : requis
+Format CV augmenté (proche JSON Resume) :
+```json
+{
+  "user_id": "user-123",
+  "basics": {
+    "name": "Nom Utilisateur",
+    "summary": "Résumé professionnel"
+  },
+  "work": [
+    {
+      "name": "Entreprise",
+      "position": "Poste",
+      "summary": "Contexte",
+      "highlights": ["Impact 1", "Impact 2"]
+    }
+  ],
+  "projects": [
+    {
+      "name": "Projet",
+      "description": "Description",
+      "image": "https://example.com/project.png"
+    }
+  ]
+}
+```
+
+- `name`/`bio` : requis pour le format portfolio simple
+- `basics.name` + `basics.summary` (ou `basics.label`) : requis pour le format CV augmenté
 - `user_id` : optionnel (généré automatiquement si absent ou vide)
 - `projects` : liste (peut être vide)
 - `projects[].image` : optionnel (une image par défaut est utilisée si vide)
 
 #### 2) Ce qui se passe pendant la génération
+- Si l'entrée est en format CV augmenté, elle est convertie automatiquement en format portfolio (`name`, `bio`, `projects`).
 - Un document canonique NoSQL est construit (`portfolio_id`, `user_id`, `created_at`, `updated_at`, `projects[].project_id`).
 - Le template `templates/index.html` est rempli avec vos données.
 - Le CSS `templates/styles/main.css` est copié.
@@ -110,8 +142,14 @@ python generate_portfolio.py --input user_data.json --output-dir dist/user-123
 
 ## Structure
 - `templates/` : Templates HTML/CSS
+- `templates/input_template_legacy.json` : Exemple format simple
+- `templates/input_template_cv_augmente.json` : Exemple format CV augmenté
 - `generate_portfolio.py` : Script principal
 - `form_example.html` : Exemple de formulaire
+
+## Références templates CV standards
+- JSON Resume (schema open-source largement utilisé) : https://jsonresume.org/schema/
+- Documentation JSON Resume : https://docs.jsonresume.org/
 
 ## Déploiement Netlify + édition utilisateur
 Le site généré contient automatiquement :

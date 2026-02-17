@@ -76,15 +76,57 @@ def _normalize_projects(projects: Any) -> List[Dict[str, str]]:
     return normalized
 
 
+def _cv_to_portfolio_payload(cv_data: Dict[str, Any]) -> Dict[str, Any]:
+    basics = cv_data.get("basics") or {}
+    mapped_projects: List[Dict[str, str]] = []
+
+    for project in cv_data.get("projects") or []:
+        mapped_projects.append(
+            {
+                "title": project.get("name", ""),
+                "description": project.get("description", ""),
+                "image": project.get("image", ""),
+            }
+        )
+
+    for work in cv_data.get("work") or []:
+        highlights_value = work.get("highlights")
+        highlights_list = highlights_value if isinstance(highlights_value, list) else []
+        highlights = ", ".join(str(item) for item in highlights_list)
+        description = " ".join([work.get("summary", ""), highlights]).strip()
+        mapped_projects.append(
+            {
+                "title": " - ".join(filter(None, [work.get("position"), work.get("name")])),
+                "description": description,
+                "image": "",
+            }
+        )
+
+    return {
+        "user_id": cv_data.get("user_id") or basics.get("email"),
+        "name": basics.get("name"),
+        "bio": basics.get("summary") or basics.get("label"),
+        "projects": mapped_projects,
+    }
+
+
+def normalize_input_payload(user_data: Dict[str, Any]) -> Dict[str, Any]:
+    """Support legacy portfolio payload and CV augmented/JSON Resume-like payload."""
+    if "basics" in user_data:
+        return _cv_to_portfolio_payload(user_data)
+    return user_data
+
+
 def build_portfolio_record(user_data: Dict[str, Any]) -> Dict[str, Any]:
     """Build a canonical MongoDB-friendly record with SQL-friendly identifiers."""
+    normalized_payload = normalize_input_payload(user_data)
     now = datetime.now(timezone.utc).isoformat()
-    raw_user_id = user_data.get("user_id")
+    raw_user_id = normalized_payload.get("user_id")
     user_id = _sanitize_text(raw_user_id) if raw_user_id is not None else ""
     if not user_id:
         user_id = str(uuid4())
     projects: List[Dict[str, Any]] = []
-    for project in _normalize_projects(user_data.get("projects")):
+    for project in _normalize_projects(normalized_payload.get("projects")):
         projects.append(
             {
                 "project_id": str(uuid4()),
@@ -96,8 +138,8 @@ def build_portfolio_record(user_data: Dict[str, Any]) -> Dict[str, Any]:
     return {
         "portfolio_id": str(uuid4()),
         "user_id": user_id,
-        "name": _sanitize_text(user_data.get("name")),
-        "bio": _sanitize_text(user_data.get("bio")),
+        "name": _sanitize_text(normalized_payload.get("name")),
+        "bio": _sanitize_text(normalized_payload.get("bio")),
         "projects": projects,
         "created_at": now,
         "updated_at": now,

@@ -40,6 +40,30 @@ class GeneratePortfolioTest(unittest.TestCase):
             self.assertEqual(document_content["portfolio_id"], sql_projection["portfolios"][0]["portfolio_id"])
             self.assertEqual(document_content["projects"][0]["project_id"], sql_projection["projects"][0]["project_id"])
 
+    def test_accepts_cv_augmented_input_format(self) -> None:
+        cv_data = {
+            "basics": {"name": "Marie Curie", "summary": "Data scientist"},
+            "work": [
+                {
+                    "name": "LabX",
+                    "position": "ML Engineer",
+                    "summary": "Built ranking models",
+                    "highlights": ["Improved precision", "Reduced latency"],
+                }
+            ],
+            "projects": [{"name": "Matching API", "description": "API for recommendations", "image": ""}],
+        }
+        with tempfile.TemporaryDirectory() as temp_dir:
+            result = generate_portfolio(cv_data, output_dir=temp_dir)
+            output = Path(result["path"])
+
+            data_content = json.loads((output / "data" / "portfolio.json").read_text(encoding="utf-8"))
+            self.assertEqual("Marie Curie", data_content["name"])
+            self.assertEqual("Data scientist", data_content["bio"])
+            self.assertEqual(2, len(data_content["projects"]))
+            self.assertEqual("Matching API", data_content["projects"][0]["title"])
+            self.assertEqual("ML Engineer - LabX", data_content["projects"][1]["title"])
+
 
 if __name__ == "__main__":
     unittest.main()
