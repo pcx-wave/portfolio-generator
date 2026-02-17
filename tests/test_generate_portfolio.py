@@ -53,6 +53,12 @@ class GeneratePortfolioTest(unittest.TestCase):
             css_content = (Path(temp_dir) / "styles" / "main.css").read_text(encoding="utf-8")
             self.assertIn("linear-gradient(135deg, var(--primary-color), var(--secondary-color))", css_content)
 
+        with tempfile.TemporaryDirectory() as temp_dir:
+            result = generate_portfolio(user_data, output_dir=temp_dir, design_theme="artistic")
+            self.assertEqual("artistic", result["design_theme"])
+            css_content = (Path(temp_dir) / "styles" / "main.css").read_text(encoding="utf-8")
+            self.assertIn("clip-path: polygon(0 0, 100% 0, 100% 90%, 0 100%);", css_content)
+
     def test_accepts_cv_augmented_input_format(self) -> None:
         cv_data = {
             "basics": {

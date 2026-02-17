@@ -14,7 +14,7 @@ DEFAULT_PROFILE_PHOTO = "https://via.placeholder.com/240x240/2c3e50/FFFFFF?text=
 DEFAULT_TEMPLATE_MODE = "hybrid"
 DEFAULT_DESIGN_THEME = "classic"
 TEMPLATE_MODES = {"portfolio", "cv", "hybrid"}
-DESIGN_THEME_FILES = {"classic": "main.css", "modern": "modern.css", "contrast": "contrast.css"}
+DESIGN_THEME_FILES = {"classic": "main.css", "modern": "modern.css", "contrast": "contrast.css", "artistic": "artistic.css"}
 SECTION_TITLE_BY_TEMPLATE = {"portfolio": "Réalisations", "cv": "Expériences", "hybrid": "Réalisations & Expériences"}
 PROJECT_CARD_TEMPLATE = """                <div class="project-card">
                     <img src="{image}" alt="{title}">
@@ -432,7 +432,7 @@ def main() -> None:
         "--design-theme",
         choices=sorted(DESIGN_THEME_FILES),
         default=DEFAULT_DESIGN_THEME,
-        help="Design theme to generate: classic, modern, or contrast",
+        help="Design theme to generate: classic, modern, contrast, or artistic",
     )
     parser.add_argument("--validate", action="store_true", help="Mark an existing generated draft as validated")
     args = parser.parse_args()

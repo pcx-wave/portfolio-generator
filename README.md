@@ -19,7 +19,7 @@ Le module expose `generate_portfolio(user_data, output_dir="dist", site_template
 Oui, le process est bien celui-ci :
 1. Réception de données JSON Resume (ou format simple legacy)
 2. Sélection du template de site (`portfolio`, `cv`, `hybrid`)
-3. Sélection du design (`classic`, `modern`, `contrast`)
+3. Sélection du design (`classic`, `modern`, `contrast`, `artistic`)
 4. Génération d'un **draft** statique
 5. Édition manuelle éventuelle via Decap CMS (`/admin`)
 6. Validation explicite du draft
@@ -153,7 +153,7 @@ result = generate_portfolio(
 
 Ou via CLI (utile pour intégration backend/worker) :
 ```bash
-python generate_portfolio.py --input user_data.json --site-template hybrid --design-theme modern --output-dir dist/user-123
+python generate_portfolio.py --input user_data.json --site-template hybrid --design-theme artistic --output-dir dist/user-123
 ```
 
 Validation d'un draft généré :
@@ -193,6 +193,7 @@ Vous pouvez donc déployer le dossier généré directement sur Netlify, puis la
 - `classic` : style actuel, neutre et polyvalent
 - `modern` : dégradés, cartes arrondies, rendu plus startup/product
 - `contrast` : noir/blanc/jaune, lisibilité forte (accessible)
+- `artistic` : rendu plus créatif (formes organiques, dégradés, ambiance éditoriale)
 
 ## Licence
 MIT
