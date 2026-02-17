@@ -151,6 +151,80 @@ class GeneratePortfolioTest(unittest.TestCase):
             html_content = (Path(temp_dir) / "index.html").read_text(encoding="utf-8")
             self.assertIn("<h2>Réalisations & Expériences</h2>", html_content)
 
+    def test_manual_editor_json_format_compatibility(self) -> None:
+        """Test that JSON format from manual editor works with portfolio generator."""
+        manual_editor_data = {
+            "basics": {
+                "name": "Test User",
+                "summary": "Test bio summary",
+                "label": "Test Label",
+                "image": "https://example.com/photo.jpg",
+                "email": "test@example.com",
+                "phone": "+33 6 00 00 00 00",
+                "location": {
+                    "address": "1 rue Test, 75001 Paris"
+                },
+                "profiles": [
+                    {"network": "LinkedIn", "url": "https://linkedin.com/in/test"}
+                ]
+            },
+            "skills": [
+                {"name": "Skill 1"},
+                {"name": "Skill 2"}
+            ],
+            "education": [
+                {
+                    "institution": "Test University",
+                    "studyType": "Master",
+                    "area": "Computer Science",
+                    "startDate": "2020",
+                    "endDate": "2022",
+                    "score": "Excellent"
+                }
+            ],
+            "projects": [
+                {
+                    "name": "Test Project",
+                    "description": "Test project description",
+                    "image": "https://example.com/project.jpg"
+                }
+            ]
+        }
+        
+        with tempfile.TemporaryDirectory() as temp_dir:
+            result = generate_portfolio(manual_editor_data, output_dir=temp_dir)
+            output = Path(result["path"])
+            
+            # Verify all files are generated
+            self.assertTrue((output / "index.html").exists())
+            self.assertTrue((output / "data" / "portfolio.json").exists())
+            
+            # Verify data is correctly processed
+            data_content = json.loads((output / "data" / "portfolio.json").read_text(encoding="utf-8"))
+            self.assertEqual("Test User", data_content["name"])
+            self.assertEqual("Test bio summary", data_content["bio"])
+            self.assertEqual("Test Label", data_content["headline"])
+            self.assertIn("test@example.com", data_content["contact_line"])
+            self.assertEqual("1 rue Test, 75001 Paris", data_content["address_line"])
+            self.assertEqual(1, len(data_content["profiles"]))
+            self.assertEqual("LinkedIn", data_content["profiles"][0]["network"])
+            self.assertEqual(2, len(data_content["skills"]))
+            self.assertIn("Skill 1", data_content["skills"])
+            self.assertEqual(1, len(data_content["education"]))
+            self.assertEqual("Test University", data_content["education"][0]["institution"])
+            self.assertEqual(1, len(data_content["projects"]))
+            self.assertEqual("Test Project", data_content["projects"][0]["title"])
+            
+            # Verify HTML contains the data
+            html_content = (output / "index.html").read_text(encoding="utf-8")
+            self.assertIn("Test User", html_content)
+            self.assertIn("Test Label", html_content)
+            self.assertIn("Test bio summary", html_content)
+            self.assertIn("LinkedIn", html_content)
+            self.assertIn("Skill 1", html_content)
+            self.assertIn("Test University", html_content)
+            self.assertIn("Test Project", html_content)
+
 
 if __name__ == "__main__":
     unittest.main()
