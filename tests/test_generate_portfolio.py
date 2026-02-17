@@ -225,6 +225,43 @@ class GeneratePortfolioTest(unittest.TestCase):
             self.assertIn("Test University", html_content)
             self.assertIn("Test Project", html_content)
 
+    def test_manual_editor_handles_missing_required_fields(self) -> None:
+        """Test that generator handles incomplete data from manual editor gracefully."""
+        # Test with missing name
+        incomplete_data = {
+            "basics": {
+                "summary": "Bio without name"
+            }
+        }
+        
+        with tempfile.TemporaryDirectory() as temp_dir:
+            result = generate_portfolio(incomplete_data, output_dir=temp_dir)
+            data_content = json.loads((Path(temp_dir) / "data" / "portfolio.json").read_text(encoding="utf-8"))
+            # Should still generate with sanitized empty name
+            self.assertIsNotNone(data_content["name"])
+        
+        # Test with missing bio/summary
+        incomplete_data2 = {
+            "basics": {
+                "name": "Test User"
+            }
+        }
+        
+        with tempfile.TemporaryDirectory() as temp_dir:
+            result = generate_portfolio(incomplete_data2, output_dir=temp_dir)
+            data_content = json.loads((Path(temp_dir) / "data" / "portfolio.json").read_text(encoding="utf-8"))
+            # Should still generate with sanitized empty bio
+            self.assertIsNotNone(data_content["bio"])
+        
+        # Test with empty basics
+        incomplete_data3 = {
+            "basics": {}
+        }
+        
+        with tempfile.TemporaryDirectory() as temp_dir:
+            result = generate_portfolio(incomplete_data3, output_dir=temp_dir)
+            self.assertTrue((Path(temp_dir) / "index.html").exists())
+
 
 if __name__ == "__main__":
     unittest.main()

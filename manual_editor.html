@@ -204,6 +204,52 @@
             font-style: italic;
         }
 
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 20px;
+            border-radius: 6px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            z-index: 1000;
+            animation: slideIn 0.3s ease-out;
+            max-width: 300px;
+        }
+
+        .notification.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .notification.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideOut {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+        }
+
         .output-section {
             margin-top: 30px;
             padding: 20px;
@@ -485,26 +531,35 @@
             // Build basics object
             const basics = {
                 name: formData.get('name'),
-                summary: formData.get('bio'),
-                label: formData.get('headline') || undefined,
-                image: formData.get('photo_url') || undefined,
-                email: formData.get('email') || undefined,
-                phone: formData.get('phone') || undefined,
-                location: formData.get('address') ? {
-                    address: formData.get('address')
-                } : undefined,
-                profiles: []
+                summary: formData.get('bio')
             };
+            
+            // Add optional fields only if they have values
+            const headline = formData.get('headline');
+            const photoUrl = formData.get('photo_url');
+            const email = formData.get('email');
+            const phone = formData.get('phone');
+            const address = formData.get('address');
+            
+            if (headline && headline.trim()) basics.label = headline;
+            if (photoUrl && photoUrl.trim()) basics.image = photoUrl;
+            if (email && email.trim()) basics.email = email;
+            if (phone && phone.trim()) basics.phone = phone;
+            if (address && address.trim()) {
+                basics.location = { address: address };
+            }
+            
+            basics.profiles = [];
 
             // Collect profiles
             for (let i = 1; i <= profileCounter; i++) {
                 const network = formData.get(`profile_network_${i}`);
                 const url = formData.get(`profile_url_${i}`);
-                if (network || url) {
-                    basics.profiles.push({
-                        network: network || undefined,
-                        url: url || undefined
-                    });
+                if ((network && network.trim()) || (url && url.trim())) {
+                    const profile = {};
+                    if (network && network.trim()) profile.network = network.trim();
+                    if (url && url.trim()) profile.url = url.trim();
+                    basics.profiles.push(profile);
                 }
             }
 
@@ -512,8 +567,8 @@
             const skills = [];
             for (let i = 1; i <= skillCounter; i++) {
                 const name = formData.get(`skill_name_${i}`);
-                if (name) {
-                    skills.push({ name: name });
+                if (name && name.trim()) {
+                    skills.push({ name: name.trim() });
                 }
             }
 
@@ -527,15 +582,15 @@
                 const endDate = formData.get(`education_endDate_${i}`);
                 const score = formData.get(`education_score_${i}`);
                 
-                if (institution || studyType || area) {
-                    education.push({
-                        institution: institution || undefined,
-                        studyType: studyType || undefined,
-                        area: area || undefined,
-                        startDate: startDate || undefined,
-                        endDate: endDate || undefined,
-                        score: score || undefined
-                    });
+                if ((institution && institution.trim()) || (studyType && studyType.trim()) || (area && area.trim())) {
+                    const edu = {};
+                    if (institution && institution.trim()) edu.institution = institution.trim();
+                    if (studyType && studyType.trim()) edu.studyType = studyType.trim();
+                    if (area && area.trim()) edu.area = area.trim();
+                    if (startDate && startDate.trim()) edu.startDate = startDate.trim();
+                    if (endDate && endDate.trim()) edu.endDate = endDate.trim();
+                    if (score && score.trim()) edu.score = score.trim();
+                    education.push(edu);
                 }
             }
 
@@ -546,39 +601,51 @@
                 const description = formData.get(`project_description_${i}`);
                 const image = formData.get(`project_image_${i}`);
                 
-                if (title || description) {
-                    projects.push({
-                        name: title || undefined,
-                        description: description || undefined,
-                        image: image || undefined
-                    });
+                if ((title && title.trim()) || (description && description.trim())) {
+                    const project = {};
+                    if (title && title.trim()) project.name = title.trim();
+                    if (description && description.trim()) project.description = description.trim();
+                    if (image && image.trim()) project.image = image.trim();
+                    projects.push(project);
                 }
             }
 
-            // Build final JSON
-            const portfolioData = {
-                basics: basics,
-                skills: skills.length > 0 ? skills : undefined,
-                education: education.length > 0 ? education : undefined,
-                projects: projects.length > 0 ? projects : undefined
-            };
-
-            // Remove undefined values
-            const cleanedData = JSON.parse(JSON.stringify(portfolioData));
+            // Build final JSON - only include non-empty arrays
+            const portfolioData = { basics };
+            if (skills.length > 0) portfolioData.skills = skills;
+            if (education.length > 0) portfolioData.education = education;
+            if (projects.length > 0) portfolioData.projects = projects;
 
             // Display JSON
-            document.getElementById('jsonOutput').textContent = JSON.stringify(cleanedData, null, 2);
+            document.getElementById('jsonOutput').textContent = JSON.stringify(portfolioData, null, 2);
             document.getElementById('outputSection').classList.add('active');
             
             // Scroll to output
             document.getElementById('outputSection').scrollIntoView({ behavior: 'smooth' });
         });
 
+        // Show notification
+        function showNotification(message, type = 'success') {
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.style.animation = 'slideOut 0.3s ease-out';
+                setTimeout(() => {
+                    document.body.removeChild(notification);
+                }, 300);
+            }, 3000);
+        }
+
         // Copy JSON
         function copyJSON() {
             const jsonText = document.getElementById('jsonOutput').textContent;
             navigator.clipboard.writeText(jsonText).then(() => {
-                alert('JSON copié dans le presse-papier !');
+                showNotification('✓ JSON copié dans le presse-papier !', 'success');
+            }).catch(() => {
+                showNotification('✗ Erreur lors de la copie', 'error');
             });
         }
 
@@ -634,7 +701,7 @@
             document.querySelector('[name="project_description_1"]').value = 'Développement d\'une plateforme e-commerce complète avec React et Node.js. Gestion de plus de 10 000 produits.';
             document.querySelector('[name="project_image_1"]').value = '';
             
-            alert('Exemple chargé ! Vous pouvez maintenant modifier les champs.');
+            showNotification('✓ Exemple chargé ! Vous pouvez maintenant modifier les champs.', 'success');
         }
 
         // Clear Form
