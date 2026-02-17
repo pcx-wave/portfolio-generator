@@ -12,17 +12,18 @@ pip install requests pyyaml
 ```
 
 ## Utilisation (module appelable par un autre service)
-Le module expose `generate_portfolio(user_data, output_dir="dist", site_template="hybrid")` pour être appelé directement par votre service de matching.
+Le module expose `generate_portfolio(user_data, output_dir="dist", site_template="hybrid", design_theme="classic")` pour être appelé directement par votre service de matching.
 
 ### Workflow cible (JSON Resume -> template -> draft -> édition -> validation -> déploiement)
 
 Oui, le process est bien celui-ci :
 1. Réception de données JSON Resume (ou format simple legacy)
 2. Sélection du template de site (`portfolio`, `cv`, `hybrid`)
-3. Génération d'un **draft** statique
-4. Édition manuelle éventuelle via Decap CMS (`/admin`)
-5. Validation explicite du draft
-6. Déploiement (Netlify-ready)
+3. Sélection du design (`classic`, `modern`, `contrast`)
+4. Génération d'un **draft** statique
+5. Édition manuelle éventuelle via Decap CMS (`/admin`)
+6. Validation explicite du draft
+7. Déploiement (Netlify-ready)
 
 ### Comment le générateur fonctionne (input -> output, architecture NoSQL)
 
@@ -131,7 +132,7 @@ user_data = {
         {"title": "Projet 1", "description": "Description", "image": "image.jpg"}
     ]
 }
-result = generate_portfolio(user_data, output_dir="dist/user-123", site_template="hybrid")
+result = generate_portfolio(user_data, output_dir="dist/user-123", site_template="hybrid", design_theme="modern")
 print(result)
 ```
 
@@ -141,12 +142,18 @@ from pymongo import MongoClient
 from generate_portfolio import generate_portfolio
 
 collection = MongoClient()["portfolio_db"]["portfolios"]
-result = generate_portfolio(user_data, output_dir="dist/user-123", mongo_collection=collection, site_template="hybrid")
+result = generate_portfolio(
+    user_data,
+    output_dir="dist/user-123",
+    mongo_collection=collection,
+    site_template="hybrid",
+    design_theme="modern"
+)
 ```
 
 Ou via CLI (utile pour intégration backend/worker) :
 ```bash
-python generate_portfolio.py --input user_data.json --site-template hybrid --output-dir dist/user-123
+python generate_portfolio.py --input user_data.json --site-template hybrid --design-theme modern --output-dir dist/user-123
 ```
 
 Validation d'un draft généré :
@@ -181,6 +188,11 @@ Vous pouvez donc déployer le dossier généré directement sur Netlify, puis la
 ## Option CMS Jamstack
 - **Par défaut : Decap CMS** (léger, Git-friendly, simple sur Netlify)
 - **Alternative possible : TinaCMS** si vous préférez une édition plus orientée React
+
+## Designs proposés à l'utilisateur
+- `classic` : style actuel, neutre et polyvalent
+- `modern` : dégradés, cartes arrondies, rendu plus startup/product
+- `contrast` : noir/blanc/jaune, lisibilité forte (accessible)
 
 ## Licence
 MIT

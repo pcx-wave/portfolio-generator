@@ -45,6 +45,14 @@ class GeneratePortfolioTest(unittest.TestCase):
             self.assertEqual("draft", workflow_state["status"])
             self.assertEqual("hybrid", workflow_state["site_template"])
 
+    def test_supports_design_theme_selection(self) -> None:
+        user_data = {"name": "Theme User", "bio": "Bio", "projects": []}
+        with tempfile.TemporaryDirectory() as temp_dir:
+            result = generate_portfolio(user_data, output_dir=temp_dir, design_theme="modern")
+            self.assertEqual("modern", result["design_theme"])
+            css_content = (Path(temp_dir) / "styles" / "main.css").read_text(encoding="utf-8")
+            self.assertIn("linear-gradient(135deg, var(--primary-color), var(--secondary-color))", css_content)
+
     def test_accepts_cv_augmented_input_format(self) -> None:
         cv_data = {
             "basics": {

@@ -12,7 +12,9 @@ from typing import Any, Dict, List
 DEFAULT_PROJECT_IMAGE = "https://via.placeholder.com/400x250/0077b6/FFFFFF?text=Project"
 DEFAULT_PROFILE_PHOTO = "https://via.placeholder.com/240x240/2c3e50/FFFFFF?text=Profile"
 DEFAULT_TEMPLATE_MODE = "hybrid"
+DEFAULT_DESIGN_THEME = "classic"
 TEMPLATE_MODES = {"portfolio", "cv", "hybrid"}
+DESIGN_THEME_FILES = {"classic": "main.css", "modern": "modern.css", "contrast": "contrast.css"}
 SECTION_TITLE_BY_TEMPLATE = {"portfolio": "Réalisations", "cv": "Expériences", "hybrid": "Réalisations & Expériences"}
 PROJECT_CARD_TEMPLATE = """                <div class="project-card">
                     <img src="{image}" alt="{title}">
@@ -284,13 +286,16 @@ def generate_portfolio(
     output_dir: str = "dist",
     mongo_collection: Any = None,
     site_template: str = DEFAULT_TEMPLATE_MODE,
+    design_theme: str = DEFAULT_DESIGN_THEME,
 ) -> Dict[str, str]:
     """Generate a static portfolio that can be deployed directly on Netlify."""
     if site_template not in TEMPLATE_MODES:
         raise ValueError(f"Unsupported site_template '{site_template}'. Expected one of: {sorted(TEMPLATE_MODES)}")
+    if design_theme not in DESIGN_THEME_FILES:
+        raise ValueError(f"Unsupported design_theme '{design_theme}'. Expected one of: {sorted(DESIGN_THEME_FILES)}")
     base_dir = Path(__file__).resolve().parent
     template_path = base_dir / "templates" / "index.html"
-    css_path = base_dir / "templates" / "styles" / "main.css"
+    css_path = base_dir / "templates" / "styles" / DESIGN_THEME_FILES[design_theme]
     output_path = Path(output_dir).resolve()
 
     record = build_portfolio_record(user_data, site_template=site_template)
@@ -386,6 +391,7 @@ def generate_portfolio(
                 "site_template": site_template,
                 "portfolio_id": record["portfolio_id"],
                 "editable_admin_url": "/admin/",
+                "design_theme": design_theme,
             },
             ensure_ascii=False,
             indent=2,
@@ -399,6 +405,7 @@ def generate_portfolio(
         "admin_url": "/admin/",
         "portfolio_id": record["portfolio_id"],
         "site_template": site_template,
+        "design_theme": design_theme,
         "status": "draft",
     }
     if mongo_collection is not None:
@@ -421,6 +428,12 @@ def main() -> None:
         default=DEFAULT_TEMPLATE_MODE,
         help="Template mode to generate: portfolio, cv, or hybrid",
     )
+    parser.add_argument(
+        "--design-theme",
+        choices=sorted(DESIGN_THEME_FILES),
+        default=DEFAULT_DESIGN_THEME,
+        help="Design theme to generate: classic, modern, or contrast",
+    )
     parser.add_argument("--validate", action="store_true", help="Mark an existing generated draft as validated")
     args = parser.parse_args()
 
@@ -430,7 +443,12 @@ def main() -> None:
         if not args.input:
             raise ValueError("--input is required unless --validate is used")
         payload = json.loads(Path(args.input).read_text(encoding="utf-8"))
-        result = generate_portfolio(payload, output_dir=args.output_dir, site_template=args.site_template)
+        result = generate_portfolio(
+            payload,
+            output_dir=args.output_dir,
+            site_template=args.site_template,
+            design_theme=args.design_theme,
+        )
     print(json.dumps(result))
 
 

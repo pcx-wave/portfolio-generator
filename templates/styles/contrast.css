@@ -1,0 +1,107 @@
+/* contrast.css */
+:root {
+    --primary-color: #000000;
+    --secondary-color: #ffcc00;
+    --dark-color: #000000;
+    --light-color: #ffffff;
+}
+
+body {
+    font-family: 'Arial', sans-serif;
+    line-height: 1.6;
+    margin: 0;
+    padding: 0;
+    color: #000;
+    background: #fff;
+}
+
+.container {
+    width: 92%;
+    max-width: 1160px;
+    margin: 0 auto;
+    padding: 1.5rem 0;
+}
+
+header {
+    background: #000;
+    color: #fff;
+    text-align: center;
+    padding: 2rem 0;
+    border-bottom: 6px solid var(--secondary-color);
+}
+
+.profile-photo {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid var(--secondary-color);
+}
+
+.headline {
+    margin: 0.5rem 0 0;
+    font-weight: 700;
+}
+
+.contact-line,
+.address-line {
+    margin: 0.25rem 0;
+}
+
+.resume-section {
+    background: #fff;
+}
+
+.profiles-list {
+    margin: 0;
+    padding-left: 1.3rem;
+}
+
+.skills-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.skill-tag {
+    display: inline-block;
+    padding: 0.3rem 0.65rem;
+    border-radius: 4px;
+    background: #000;
+    color: #fff;
+    border: 2px solid var(--secondary-color);
+    font-size: 0.9rem;
+}
+
+.education-list {
+    display: grid;
+    gap: 0.8rem;
+}
+
+.education-item {
+    background: #fff;
+    padding: 0.9rem;
+    border: 2px solid #000;
+}
+
+.project-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.project-card {
+    background: #fff;
+    padding: 1rem;
+    border: 2px solid #000;
+    text-align: center;
+}
+
+footer {
+    background: #000;
+    color: #fff;
+    text-align: center;
+    padding: 0.9rem 0;
+    border-top: 6px solid var(--secondary-color);
+}
