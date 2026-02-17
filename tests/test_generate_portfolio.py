@@ -28,6 +28,7 @@ class GeneratePortfolioTest(unittest.TestCase):
 
             data_content = json.loads((output / "data" / "portfolio.json").read_text(encoding="utf-8"))
             self.assertEqual("Alice &lt;Dev&gt;", data_content["name"])
+            self.assertEqual("Proj 1", data_content["projects"][0]["title"])
 
 
 if __name__ == "__main__":

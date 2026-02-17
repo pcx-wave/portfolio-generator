@@ -102,7 +102,9 @@ def generate_portfolio(user_data: Dict[str, Any], output_dir: str = "dist") -> D
         flags=re.DOTALL,
     )
     if replaced != 1:
-        raise ValueError("Template project loop block not found or duplicated")
+        raise ValueError(
+            "Template project loop block ({% for project in projects %}...{% endfor %}) not found or appears multiple times in template"
+        )
 
     output_path.mkdir(parents=True, exist_ok=True)
     (output_path / "styles").mkdir(parents=True, exist_ok=True)
