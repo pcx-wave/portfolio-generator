@@ -10,6 +10,9 @@ from typing import Any, Dict, List
 
 
 DEFAULT_PROJECT_IMAGE = "https://via.placeholder.com/400x250/0077b6/FFFFFF?text=Project"
+DEFAULT_TEMPLATE_MODE = "hybrid"
+TEMPLATE_MODES = {"portfolio", "cv", "hybrid"}
+SECTION_TITLE_BY_TEMPLATE = {"portfolio": "Réalisations", "cv": "Expériences", "hybrid": "Réalisations & Expériences"}
 PROJECT_CARD_TEMPLATE = """                <div class="project-card">
                     <img src="{image}" alt="{title}">
                     <h3>{title}</h3>
@@ -76,7 +79,7 @@ def _normalize_projects(projects: Any) -> List[Dict[str, str]]:
     return normalized
 
 
-def _cv_to_portfolio_payload(cv_data: Dict[str, Any]) -> Dict[str, Any]:
+def _cv_to_portfolio_payload(cv_data: Dict[str, Any], site_template: str = DEFAULT_TEMPLATE_MODE) -> Dict[str, Any]:
     basics = cv_data.get("basics") or {}
     mapped_projects: List[Dict[str, str]] = []
 
@@ -89,12 +92,13 @@ def _cv_to_portfolio_payload(cv_data: Dict[str, Any]) -> Dict[str, Any]:
             }
         )
 
+    work_projects: List[Dict[str, str]] = []
     for work in cv_data.get("work") or []:
         highlights_value = work.get("highlights")
         highlights_list = highlights_value if isinstance(highlights_value, list) else []
         highlights = ", ".join(str(item) for item in highlights_list)
         description = " ".join([work.get("summary", ""), highlights]).strip()
-        mapped_projects.append(
+        work_projects.append(
             {
                 "title": " - ".join(filter(None, [work.get("position"), work.get("name")])),
                 "description": description,
@@ -102,24 +106,35 @@ def _cv_to_portfolio_payload(cv_data: Dict[str, Any]) -> Dict[str, Any]:
             }
         )
 
+    if site_template == "portfolio":
+        selected_projects = mapped_projects
+    elif site_template == "cv":
+        selected_projects = work_projects
+    elif site_template == "hybrid":
+        selected_projects = mapped_projects + work_projects
+    else:
+        raise ValueError(f"Unsupported site_template '{site_template}'")
+
     return {
         "user_id": cv_data.get("user_id") or basics.get("email"),
         "name": basics.get("name"),
         "bio": basics.get("summary") or basics.get("label"),
-        "projects": mapped_projects,
+        "projects": selected_projects,
     }
 
 
-def normalize_input_payload(user_data: Dict[str, Any]) -> Dict[str, Any]:
+def normalize_input_payload(user_data: Dict[str, Any], site_template: str = DEFAULT_TEMPLATE_MODE) -> Dict[str, Any]:
     """Support legacy portfolio payload and CV augmented/JSON Resume-like payload."""
     if "basics" in user_data:
-        return _cv_to_portfolio_payload(user_data)
+        return _cv_to_portfolio_payload(user_data, site_template=site_template)
     return user_data
 
 
-def build_portfolio_record(user_data: Dict[str, Any]) -> Dict[str, Any]:
+def build_portfolio_record(user_data: Dict[str, Any], site_template: str = DEFAULT_TEMPLATE_MODE) -> Dict[str, Any]:
     """Build a canonical MongoDB-friendly record with SQL-friendly identifiers."""
-    normalized_payload = normalize_input_payload(user_data)
+    if site_template not in TEMPLATE_MODES:
+        raise ValueError(f"Unsupported site_template '{site_template}'. Expected one of: {sorted(TEMPLATE_MODES)}")
+    normalized_payload = normalize_input_payload(user_data, site_template=site_template)
     now = datetime.now(timezone.utc).isoformat()
     raw_user_id = normalized_payload.get("user_id")
     user_id = _sanitize_text(raw_user_id) if raw_user_id is not None else ""
@@ -143,6 +158,7 @@ def build_portfolio_record(user_data: Dict[str, Any]) -> Dict[str, Any]:
         "projects": projects,
         "created_at": now,
         "updated_at": now,
+        "site_template": site_template,
     }
 
 
@@ -171,16 +187,36 @@ def _build_sql_projection(record: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
+def mark_site_validated(output_dir: str) -> Dict[str, str]:
+    output_path = Path(output_dir).resolve()
+    workflow_state_path = output_path / "data" / "workflow_state.json"
+    try:
+        state = json.loads(workflow_state_path.read_text(encoding="utf-8"))
+    except (FileNotFoundError, json.JSONDecodeError) as error:
+        raise ValueError(
+            f"Cannot validate site at '{output_path}': missing or invalid data/workflow_state.json. Generate a draft first."
+        ) from error
+    state["status"] = "validated"
+    state["validated_at"] = datetime.now(timezone.utc).isoformat()
+    workflow_state_path.write_text(json.dumps(state, ensure_ascii=False, indent=2), encoding="utf-8")
+    return {"path": str(output_path), "status": "validated"}
+
+
 def generate_portfolio(
-    user_data: Dict[str, Any], output_dir: str = "dist", mongo_collection: Any = None
+    user_data: Dict[str, Any],
+    output_dir: str = "dist",
+    mongo_collection: Any = None,
+    site_template: str = DEFAULT_TEMPLATE_MODE,
 ) -> Dict[str, str]:
     """Generate a static portfolio that can be deployed directly on Netlify."""
+    if site_template not in TEMPLATE_MODES:
+        raise ValueError(f"Unsupported site_template '{site_template}'. Expected one of: {sorted(TEMPLATE_MODES)}")
     base_dir = Path(__file__).resolve().parent
     template_path = base_dir / "templates" / "index.html"
     css_path = base_dir / "templates" / "styles" / "main.css"
     output_path = Path(output_dir).resolve()
 
-    record = build_portfolio_record(user_data)
+    record = build_portfolio_record(user_data, site_template=site_template)
     name = record["name"]
     bio = record["bio"]
     projects = record["projects"]
@@ -195,6 +231,7 @@ def generate_portfolio(
         for project in projects
     )
     rendered_html = html_template.replace("{{name}}", name).replace("{{bio}}", bio)
+    rendered_html = rendered_html.replace("{{section_title}}", SECTION_TITLE_BY_TEMPLATE[site_template])
     rendered_html, replaced = re.subn(
         r"\s*\{%\s*for project in projects\s*%\}.*?\{%\s*endfor\s*%\}",
         f"\n{cards}",
@@ -227,9 +264,28 @@ def generate_portfolio(
         json.dumps(_build_sql_projection(record), ensure_ascii=False, indent=2),
         encoding="utf-8",
     )
+    (output_path / "data" / "workflow_state.json").write_text(
+        json.dumps(
+            {
+                "status": "draft",
+                "site_template": site_template,
+                "portfolio_id": record["portfolio_id"],
+                "editable_admin_url": "/admin/",
+            },
+            ensure_ascii=False,
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
     (output_path / "netlify.toml").write_text(NETLIFY_TOML, encoding="utf-8")
 
-    response = {"path": str(output_path), "admin_url": "/admin/", "portfolio_id": record["portfolio_id"]}
+    response = {
+        "path": str(output_path),
+        "admin_url": "/admin/",
+        "portfolio_id": record["portfolio_id"],
+        "site_template": site_template,
+        "status": "draft",
+    }
     if mongo_collection is not None:
         try:
             mongo_collection.insert_one(record)
@@ -241,13 +297,25 @@ def generate_portfolio(
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Generate a static portfolio from a JSON payload.")
-    parser.add_argument("--input", required=True, help="Path to a JSON file containing name, bio and projects")
+    parser = argparse.ArgumentParser(description="Generate or validate a static portfolio site from a JSON payload.")
+    parser.add_argument("--input", help="Path to a JSON file containing portfolio or CV input data")
     parser.add_argument("--output-dir", default="dist", help="Output directory for generated static site")
+    parser.add_argument(
+        "--site-template",
+        choices=sorted(TEMPLATE_MODES),
+        default=DEFAULT_TEMPLATE_MODE,
+        help="Template mode to generate: portfolio, cv, or hybrid",
+    )
+    parser.add_argument("--validate", action="store_true", help="Mark an existing generated draft as validated")
     args = parser.parse_args()
 
-    payload = json.loads(Path(args.input).read_text(encoding="utf-8"))
-    result = generate_portfolio(payload, output_dir=args.output_dir)
+    if args.validate:
+        result = mark_site_validated(args.output_dir)
+    else:
+        if not args.input:
+            raise ValueError("--input is required unless --validate is used")
+        payload = json.loads(Path(args.input).read_text(encoding="utf-8"))
+        result = generate_portfolio(payload, output_dir=args.output_dir, site_template=args.site_template)
     print(json.dumps(result))
 
 

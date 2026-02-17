@@ -12,7 +12,17 @@ pip install requests pyyaml
 ```
 
 ## Utilisation (module appelable par un autre service)
-Le module expose `generate_portfolio(user_data, output_dir="dist")` pour être appelé directement par votre service de matching.
+Le module expose `generate_portfolio(user_data, output_dir="dist", site_template="hybrid")` pour être appelé directement par votre service de matching.
+
+### Workflow cible (JSON Resume -> template -> draft -> édition -> validation -> déploiement)
+
+Oui, le process est bien celui-ci :
+1. Réception de données JSON Resume (ou format simple legacy)
+2. Sélection du template de site (`portfolio`, `cv`, `hybrid`)
+3. Génération d'un **draft** statique
+4. Édition manuelle éventuelle via Decap CMS (`/admin`)
+5. Validation explicite du draft
+6. Déploiement (Netlify-ready)
 
 ### Comment le générateur fonctionne (input -> output, architecture NoSQL)
 
@@ -80,6 +90,7 @@ Format CV augmenté (proche JSON Resume) :
 - Les données éditables sont écrites dans `data/portfolio.json`.
 - Le document NoSQL est écrit dans `data/portfolio_document.json`.
 - Une projection SQL-friendly (tables `portfolios` + `projects`) est écrite dans `data/portfolio_sql_projection.json`.
+- L'état du workflow est écrit dans `data/workflow_state.json` (draft/validated).
 - La config Netlify `netlify.toml` est créée.
 
 #### 3) Output généré
@@ -94,6 +105,7 @@ dist/user-123/
   data/portfolio.json
   data/portfolio_document.json
   data/portfolio_sql_projection.json
+  data/workflow_state.json
   netlify.toml
 ```
 
@@ -118,7 +130,7 @@ user_data = {
         {"title": "Projet 1", "description": "Description", "image": "image.jpg"}
     ]
 }
-result = generate_portfolio(user_data, output_dir="dist/user-123")
+result = generate_portfolio(user_data, output_dir="dist/user-123", site_template="hybrid")
 print(result)
 ```
 
@@ -128,12 +140,17 @@ from pymongo import MongoClient
 from generate_portfolio import generate_portfolio
 
 collection = MongoClient()["portfolio_db"]["portfolios"]
-result = generate_portfolio(user_data, output_dir="dist/user-123", mongo_collection=collection)
+result = generate_portfolio(user_data, output_dir="dist/user-123", mongo_collection=collection, site_template="hybrid")
 ```
 
 Ou via CLI (utile pour intégration backend/worker) :
 ```bash
-python generate_portfolio.py --input user_data.json --output-dir dist/user-123
+python generate_portfolio.py --input user_data.json --site-template hybrid --output-dir dist/user-123
+```
+
+Validation d'un draft généré :
+```bash
+python generate_portfolio.py --validate --output-dir dist/user-123
 ```
 
 ## Intégration avec JobsMatch
