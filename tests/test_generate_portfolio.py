@@ -3,7 +3,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from generate_portfolio import generate_portfolio, mark_site_validated
+from generate_portfolio import generate_portfolio, mark_site_validated, generate_astro_portfolio
 
 
 class GeneratePortfolioTest(unittest.TestCase):
@@ -261,6 +261,69 @@ class GeneratePortfolioTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp_dir:
             result = generate_portfolio(incomplete_data3, output_dir=temp_dir)
             self.assertTrue((Path(temp_dir) / "index.html").exists())
+
+    def test_generates_astro_project_structure(self) -> None:
+        """Test that Astro portfolio generation creates proper project structure."""
+        user_data = {
+            "name": "Astro User",
+            "bio": "Testing Astro generation",
+            "projects": [{"title": "Astro Project", "description": "Test Astro", "image": ""}],
+        }
+        with tempfile.TemporaryDirectory() as temp_dir:
+            result = generate_astro_portfolio(user_data, output_dir=temp_dir)
+            output = Path(result["path"])
+            
+            # Check Astro project structure
+            self.assertEqual(result["type"], "astro")
+            self.assertEqual(result["status"], "generated")
+            self.assertIn("npm", result["dev_command"])
+            self.assertIn("build", result["build_command"])
+            
+            # Check Astro files exist
+            self.assertTrue((output / "package.json").exists())
+            self.assertTrue((output / "astro.config.mjs").exists())
+            self.assertTrue((output / ".gitignore").exists())
+            self.assertTrue((output / "README.md").exists())
+            
+            # Check Astro src structure
+            self.assertTrue((output / "src" / "layouts" / "Layout.astro").exists())
+            self.assertTrue((output / "src" / "pages" / "index.astro").exists())
+            self.assertTrue((output / "src" / "content" / "portfolio" / "data.json").exists())
+            
+            # Check public folder
+            self.assertTrue((output / "public" / "styles" / "main.css").exists())
+            
+            # Verify data content
+            data_content = json.loads((output / "src" / "content" / "portfolio" / "data.json").read_text(encoding="utf-8"))
+            self.assertEqual("Astro User", data_content["name"])
+            self.assertEqual("Testing Astro generation", data_content["bio"])
+            self.assertEqual(1, len(data_content["projects"]))
+            self.assertEqual("Astro Project", data_content["projects"][0]["title"])
+    
+    def test_astro_supports_different_templates_and_themes(self) -> None:
+        """Test that Astro generation supports different templates and themes."""
+        user_data = {
+            "basics": {
+                "name": "Theme Test",
+                "summary": "Testing themes"
+            }
+        }
+        
+        # Test with modern theme
+        with tempfile.TemporaryDirectory() as temp_dir:
+            result = generate_astro_portfolio(
+                user_data,
+                output_dir=temp_dir,
+                site_template="portfolio",
+                design_theme="modern"
+            )
+            self.assertEqual("modern", result["design_theme"])
+            self.assertEqual("portfolio", result["site_template"])
+            
+            # Check that modern CSS was copied
+            output = Path(result["path"])
+            css_content = (output / "public" / "styles" / "main.css").read_text(encoding="utf-8")
+            self.assertIn("linear-gradient", css_content)  # Modern theme has gradients
 
 
 if __name__ == "__main__":

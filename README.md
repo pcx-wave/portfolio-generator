@@ -1,15 +1,55 @@
 # Portfolio Generator
 
-Ce dépôt contient un script Python pour générer des portfolios statiques avec intégration Decap CMS et déploiement automatique sur Netlify.
+Ce dépôt contient un script Python pour générer des portfolios statiques avec intégration Decap CMS et déploiement automatique sur Netlify. **Nouveau:** Support complet pour Astro CMS!
+
+## 🎯 Deux Modes de Génération
+
+1. **Static HTML** (par défaut) - Site HTML/CSS traditionnel avec Decap CMS
+2. **Astro** (nouveau!) - Projet Astro moderne avec environnement de développement complet
 
 ## Prérequis
 - Python 3.8+
 - MongoDB (optionnel, si vous voulez persister les portfolios)
+- Node.js (pour projets Astro)
 
 ## Installation
 ```bash
-pip install requests pyyaml
+pip install requests pyyaml flask flask-cors
 ```
+
+## 🚀 Génération Astro (Nouveau!)
+
+**Générer un projet Astro moderne:**
+
+```bash
+# Via CLI
+python generate_portfolio.py --input user_data.json --output-dir my-portfolio --astro
+
+# Avec template et thème
+python generate_portfolio.py \
+  --input user_data.json \
+  --output-dir my-portfolio \
+  --astro \
+  --site-template hybrid \
+  --design-theme modern
+```
+
+**Le projet Astro généré inclut:**
+- ✅ Structure de projet Astro complète
+- ✅ Hot reload pour développement
+- ✅ Support TypeScript
+- ✅ Build optimisé
+- ✅ Toutes vos données en JSON
+- ✅ Components .astro personnalisables
+
+**Utiliser le projet Astro:**
+```bash
+cd my-portfolio
+npm install
+npm run dev  # Ouvre http://localhost:4321
+```
+
+📚 **Documentation complète:** [ASTRO_COMPATIBILITY_GUIDE.md](ASTRO_COMPATIBILITY_GUIDE.md)
 
 ## Édition Manuelle des Champs
 

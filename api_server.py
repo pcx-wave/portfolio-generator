@@ -26,7 +26,7 @@ import os
 from datetime import datetime, timezone
 from typing import Dict, Any, Optional
 
-from generate_portfolio import generate_portfolio, mark_site_validated
+from generate_portfolio import generate_portfolio, mark_site_validated, generate_astro_portfolio
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS for cross-origin requests
@@ -123,6 +123,89 @@ def api_generate_portfolio():
         }
         
         # TODO: Send callback if callback_url provided
+        
+        return jsonify(response), 201
+        
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/generate-astro", methods=["POST"])
+def api_generate_astro_portfolio():
+    """
+    Generate a new Astro-based portfolio from JSON data.
+    
+    Request body: Same as /api/generate but generates Astro project
+    {
+        "user_id": "user-123",
+        "basics": {...},
+        "projects": [...],
+        "site_template": "hybrid",
+        "design_theme": "classic",
+        "callback_url": "https://example.com/callback"
+    }
+    
+    Response:
+    {
+        "success": true,
+        "portfolio_id": "abc-123",
+        "portfolio_path": "/path/to/astro/project",
+        "type": "astro",
+        "dev_command": "npm install && npm run dev",
+        "build_command": "npm run build"
+    }
+    """
+    try:
+        data = request.get_json(silent=True)
+        
+        if data is None:
+            return jsonify({"error": "No JSON data provided"}), 400
+        
+        # Extract configuration
+        user_id = data.get("user_id", "")
+        site_template = data.get("site_template", "hybrid")
+        design_theme = data.get("design_theme", "classic")
+        callback_url = data.get("callback_url")
+        
+        # Remove config fields from portfolio data
+        portfolio_data = {k: v for k, v in data.items() 
+                         if k not in ["site_template", "design_theme", "callback_url"]}
+        
+        # Generate Astro portfolio
+        output_dir = PORTFOLIOS_DIR / f"{user_id}-astro" if user_id else PORTFOLIOS_DIR / f"astro-{datetime.now().strftime('%Y%m%d-%H%M%S')}"
+        result = generate_astro_portfolio(
+            portfolio_data,
+            output_dir=str(output_dir),
+            site_template=site_template,
+            design_theme=design_theme
+        )
+        
+        portfolio_id = result["portfolio_id"]
+        
+        # Register portfolio
+        PORTFOLIO_REGISTRY[portfolio_id] = {
+            "portfolio_id": portfolio_id,
+            "user_id": user_id,
+            "path": result["path"],
+            "type": "astro",
+            "site_template": site_template,
+            "design_theme": design_theme,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "callback_url": callback_url
+        }
+        
+        # Build response
+        response = {
+            "success": True,
+            "portfolio_id": portfolio_id,
+            "portfolio_path": result["path"],
+            "type": "astro",
+            "site_template": site_template,
+            "design_theme": design_theme,
+            "dev_command": result["dev_command"],
+            "build_command": result["build_command"],
+            "status": result["status"]
+        }
         
         return jsonify(response), 201
         
@@ -361,7 +444,8 @@ def index():
         "service": "Portfolio Generator API",
         "version": "1.0.0",
         "endpoints": {
-            "POST /api/generate": "Generate a new portfolio",
+            "POST /api/generate": "Generate a new portfolio (static HTML)",
+            "POST /api/generate-astro": "Generate a new Astro-based portfolio",
             "GET /api/portfolio/<id>": "Get portfolio data",
             "PUT /api/portfolio/<id>": "Update portfolio",
             "POST /api/portfolio/<id>/validate": "Validate portfolio",

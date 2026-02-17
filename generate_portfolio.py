@@ -522,6 +522,7 @@ def main() -> None:
         help="Design theme to generate: classic, modern, contrast, or artistic",
     )
     parser.add_argument("--validate", action="store_true", help="Mark an existing generated draft as validated")
+    parser.add_argument("--astro", action="store_true", help="Generate an Astro-based portfolio instead of static HTML")
     args = parser.parse_args()
 
     if args.validate:
@@ -530,12 +531,23 @@ def main() -> None:
         if not args.input:
             raise ValueError("--input is required unless --validate is used")
         payload = json.loads(Path(args.input).read_text(encoding="utf-8"))
-        result = generate_portfolio(
-            payload,
-            output_dir=args.output_dir,
-            site_template=args.site_template,
-            design_theme=args.design_theme,
-        )
+        
+        if args.astro:
+            # Generate Astro-based portfolio
+            result = generate_astro_portfolio(
+                payload,
+                output_dir=args.output_dir,
+                site_template=args.site_template,
+                design_theme=args.design_theme,
+            )
+        else:
+            # Generate static HTML portfolio
+            result = generate_portfolio(
+                payload,
+                output_dir=args.output_dir,
+                site_template=args.site_template,
+                design_theme=args.design_theme,
+            )
     print(json.dumps(result))
 
 
