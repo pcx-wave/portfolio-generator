@@ -1,0 +1,10 @@
+---
+// Main portfolio page
+import Layout from '../layouts/Layout.astro';
+import portfolioData from '../content/portfolio/data.json';
+
+const portfolio = portfolioData;
+const title = portfolio.name;
+---
+
+<Layout title={title} portfolio={portfolio} />
